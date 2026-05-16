@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-primary: #8DEB71;
+  --color-primary-dark: #123315;
+  --color-background-light: #F8F9FA;
+  --color-background-dark: #121212;
+  --font-sans: var(--font-sans), sans-serif;
+}
+
+body {
+  @apply bg-background-light text-slate-900;
+}

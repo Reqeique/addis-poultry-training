@@ -1,0 +1,8 @@
+{
+  "name": "Remix: Remix: Remix: Poultry Training Chat App",
+  "description": "A streamlined, mobile-first communication platform designed strictly to connect Trainer Staff with Trainees (Poultry Farmers) and Trainees with one another.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
