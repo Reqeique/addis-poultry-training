@@ -1,7 +1,7 @@
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
-  output: process.env.NODE_ENV === 'development' ? undefined : 'export',
+  output: process.env.STATIC_EXPORT === 'true' ? 'export' : undefined,
   reactStrictMode: true,
   eslint: {
     ignoreDuringBuilds: true,

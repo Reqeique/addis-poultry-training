@@ -9,6 +9,7 @@ function Cleanup {
         }
         Move-Item api_temp app/api -Force
     }
+    Remove-Item Env:\STATIC_EXPORT -ErrorAction SilentlyContinue
 }
 
 # Trap unexpected errors to ensure cleanup fires
@@ -50,6 +51,7 @@ try {
     }
     
     $env:JAVA_HOME="C:\Users\anani\AppData\Local\Programs\Android Studio\jbr"
+    $env:STATIC_EXPORT="true"
     
     npm run build
 

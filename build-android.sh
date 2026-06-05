@@ -18,10 +18,12 @@ fi
 echo ">>> Building Next.js static export..."
 if grep -q "NEXT_PUBLIC_SUPABASE_URL" .env.local 2>/dev/null; then
   echo ">>> Using real Supabase credentials from .env.local..."
+  STATIC_EXPORT="true" \
   JAVA_HOME="C:\Users\anani\AppData\Local\Programs\Android Studio\jbr" \
   npm run build
 else
   echo ">>> Using placeholder Supabase credentials for compilation..."
+  STATIC_EXPORT="true" \
   NEXT_PUBLIC_SUPABASE_URL="https://placeholder.supabase.co" \
   NEXT_PUBLIC_SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.placeholder" \
   JAVA_HOME="C:\Users\anani\AppData\Local\Programs\Android Studio\jbr" \
