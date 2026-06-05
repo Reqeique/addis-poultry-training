@@ -8,6 +8,7 @@ import { Bell, CheckCircle2, Loader2, Mic, Send, Square, Trash2, Video } from 'l
 import { TrainerBottomNav } from '@/components/TrainerBottomNav';
 import { useAuthStore } from '@/lib/store';
 import { createClient } from '@/lib/supabase/client';
+import { resolveApiUrl } from '@/lib/api-helper';
 
 interface InquiryRecord {
   id: string;
@@ -28,9 +29,60 @@ interface InquiryRecord {
   video_expires_at: string | null;
 }
 
+async function findOrCreateChat(supabase: ReturnType<typeof createClient>, userId: string, peerId: string) {
+  const { data: myChats, error: myChatsError } = await supabase
+    .from('chat_participants')
+    .select('chat_id')
+    .eq('user_id', userId);
+
+  if (myChatsError) {
+    throw new Error(myChatsError.message);
+  }
+
+  const chatIds = myChats?.map((chat) => chat.chat_id) ?? [];
+
+  if (chatIds.length > 0) {
+    const { data: existingChat, error: existingChatError } = await supabase
+      .from('chat_participants')
+      .select('chat_id')
+      .eq('user_id', peerId)
+      .in('chat_id', chatIds)
+      .maybeSingle();
+
+    if (existingChatError) {
+      throw new Error(existingChatError.message);
+    }
+
+    if (existingChat) {
+      return existingChat.chat_id as string;
+    }
+  }
+
+  const { data: newChat, error: chatError } = await supabase
+    .from('chats')
+    .insert({})
+    .select('id')
+    .single();
+
+  if (chatError || !newChat) {
+    throw new Error(chatError?.message || 'Could not create trainer chat.');
+  }
+
+  const { error: participantsError } = await supabase.from('chat_participants').insert([
+    { chat_id: newChat.id, user_id: userId },
+    { chat_id: newChat.id, user_id: peerId },
+  ]);
+
+  if (participantsError) {
+    throw new Error(participantsError.message);
+  }
+
+  return newChat.id as string;
+}
+
 export default function AlertsPage() {
   const router = useRouter();
-  const { profile } = useAuthStore();
+  const { profile, loading: authLoading } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [inquiries, setInquiries] = useState<InquiryRecord[]>([]);
@@ -44,38 +96,14 @@ export default function AlertsPage() {
   const audioChunksRef = useRef<Blob[]>([]);
 
   useEffect(() => {
+    if (authLoading) return;
     if (!profile) {
+      setLoading(false);
       return;
     }
 
     if (profile.role !== 'trainer') {
       router.push('/trainee');
-      return;
-    }
-
-    if (profile.uid.startsWith('mock-')) {
-      setInquiries([
-        {
-          id: 'mock-inquiry-1',
-          trainee_id: 'mock-trainee-123',
-          trainer_id: profile.uid,
-          trainee_name: 'Samuel Adebayor',
-          message: 'The chicks look weak today. I have attached a short clip.',
-          urgency: 'High',
-          status: 'pending',
-          image: null,
-          audio_url: null,
-          response: null,
-          response_audio_url: null,
-          created_at: new Date().toISOString(),
-          responded_at: null,
-          video_object_key: null,
-          video_status: null,
-          video_expires_at: null,
-        },
-      ]);
-      setSelectedInquiryId('mock-inquiry-1');
-      setLoading(false);
       return;
     }
 
@@ -123,7 +151,7 @@ export default function AlertsPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [profile, router]);
+  }, [profile, authLoading, router]);
 
   const selectedInquiry = useMemo(
     () => inquiries.find((inquiry) => inquiry.id === selectedInquiryId) ?? null,
@@ -212,51 +240,59 @@ export default function AlertsPage() {
         })) as string;
       }
 
-      if (profile?.uid.startsWith('mock-')) {
-        setInquiries((current) =>
-          current.map((inquiry) =>
-            inquiry.id === selectedInquiry.id
-              ? {
-                  ...inquiry,
-                  status: 'responded',
-                  response: responseText.trim() || inquiry.response,
-                  response_audio_url: responseAudioBase64 || null,
-                  responded_at: new Date().toISOString(),
-                }
-              : inquiry
-          )
-        );
-      } else {
-        const supabase = createClient();
-        const { error } = await supabase
-          .from('inquiries')
-          .update({
-            response: responseText.trim(),
-            response_audio_url: responseAudioBase64 || null,
-            status: 'responded',
-            responded_at: new Date().toISOString(),
-          })
-          .eq('id', selectedInquiry.id)
-          .eq('trainer_id', profile.uid);
+      const supabase = createClient();
+      const { error } = await supabase
+        .from('inquiries')
+        .update({
+          response: responseText.trim(),
+          response_audio_url: responseAudioBase64 || null,
+          status: 'responded',
+          responded_at: new Date().toISOString(),
+        })
+        .eq('id', selectedInquiry.id)
+        .eq('trainer_id', profile.uid);
 
-        if (error) {
-          throw new Error(error.message || 'Could not send response.');
-        }
-
-        setInquiries((current) =>
-          current.map((inquiry) =>
-            inquiry.id === selectedInquiry.id
-              ? {
-                  ...inquiry,
-                  status: 'responded',
-                  response: responseText.trim() || inquiry.response,
-                  response_audio_url: responseAudioBase64 || null,
-                  responded_at: new Date().toISOString(),
-                }
-              : inquiry
-          )
-        );
+      if (error) {
+        throw new Error(error.message || 'Could not send response.');
       }
+
+      // Auto-insert message reply into the chat thread
+      try {
+        const chatId = await findOrCreateChat(supabase, selectedInquiry.trainee_id, profile.uid);
+        const responseMsgText = responseText.trim() || 'Sent an audio reply';
+
+        await supabase.from('messages').insert({
+          chat_id: chatId,
+          sender_id: profile.uid,
+          text: responseMsgText,
+          audio_url: responseAudioBase64 || null,
+          inquiry_id: selectedInquiry.id,
+        });
+
+        await supabase
+          .from('chats')
+          .update({
+            last_message: responseMsgText,
+            last_message_time: new Date().toISOString(),
+          })
+          .eq('id', chatId);
+      } catch (chatErr) {
+        console.error('Error auto-sending inquiry response message to chat:', chatErr);
+      }
+
+      setInquiries((current) =>
+        current.map((inquiry) =>
+          inquiry.id === selectedInquiry.id
+            ? {
+                ...inquiry,
+                status: 'responded',
+                response: responseText.trim() || inquiry.response,
+                response_audio_url: responseAudioBase64 || null,
+                responded_at: new Date().toISOString(),
+              }
+            : inquiry
+        )
+      );
 
       clearResponseAudio();
     } catch (error) {
@@ -352,13 +388,13 @@ export default function AlertsPage() {
 
                     {selectedInquiry.image && (
                       <div className="overflow-hidden rounded-3xl border border-slate-100">
-                        <Image src={selectedInquiry.image} alt="Inquiry attachment" width={640} height={640} className="h-auto w-full object-cover" />
+                        <Image src={selectedInquiry.image} alt="Inquiry attachment" width={640} height={640} loading="lazy" className="h-auto w-full object-cover" />
                       </div>
                     )}
 
                     {selectedInquiry.audio_url && (
                       <div className="rounded-3xl border border-slate-100 bg-slate-50 p-3">
-                        <audio src={selectedInquiry.audio_url} controls className="w-full" />
+                        <audio src={selectedInquiry.audio_url} controls preload="none" className="w-full" />
                       </div>
                     )}
 
@@ -371,8 +407,9 @@ export default function AlertsPage() {
                         <video
                           key={selectedInquiry.id}
                           controls
+                          preload="none"
                           className="w-full rounded-2xl bg-black"
-                          src={`/api/inquiries/${selectedInquiry.id}/video`}
+                          src={resolveApiUrl(`/api/inquiries/${selectedInquiry.id}/video`)}
                         />
                       </div>
                     )}

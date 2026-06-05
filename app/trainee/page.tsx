@@ -7,7 +7,9 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { TraineeBottomNav } from '@/components/TraineeBottomNav';
 import { processVideoForUpload } from '@/lib/media/video';
-import { LogOut, Send, CheckCircle2, Globe, Camera, Image as ImageIcon, Mic, Square, Trash2, Video } from 'lucide-react';
+import { LogOut, Send, CheckCircle2, Globe, Camera, Image as ImageIcon, Mic, Square, Trash2, Video, AlertTriangle, Clock } from 'lucide-react';
+import { resolveApiUrl } from '@/lib/api-helper';
+import { differenceInDays, format } from 'date-fns';
 
 const CATEGORIES = ['Marketing', 'Health', 'Housing', 'Feeding', 'General'];
 
@@ -74,6 +76,8 @@ const TRANSLATIONS: any = {
   }
 };
 
+
+
 async function findOrCreateChat(supabase: ReturnType<typeof createClient>, userId: string, peerId: string) {
   const { data: myChats, error: myChatsError } = await supabase
     .from('chat_participants')
@@ -126,7 +130,7 @@ async function findOrCreateChat(supabase: ReturnType<typeof createClient>, userI
 }
 
 export default function TraineeDashboard() {
-  const { profile } = useAuthStore();
+  const { profile, loading: authLoading } = useAuthStore();
   const { isAmharic, setIsAmharic } = useAppStore();
   const router = useRouter();
   const supabase = createClient();
@@ -166,7 +170,7 @@ export default function TraineeDashboard() {
   const t = TRANSLATIONS[lang];
 
   useEffect(() => {
-    if (!profile || profile.role !== 'trainee' || profile.uid.startsWith('mock-')) return;
+    if (!profile || profile.role !== 'trainee') return;
 
     const fetchTrainerMessage = async () => {
       const { data: inquiries } = await supabase
@@ -377,13 +381,27 @@ export default function TraineeDashboard() {
   }, [videoPreviewUrl]);
 
   useEffect(() => {
-    if (!profile) return;
+    // Still waiting for auth — don't touch the spinner yet
+    if (authLoading) return;
+    // Auth resolved but no profile (not logged in)
+    if (!profile) {
+      setLoading(false);
+      return;
+    }
     if (profile.role !== 'trainee') {
       router.push('/trainer');
       return;
     }
     setLoading(false);
-  }, [profile, router]);
+  }, [profile, authLoading, router]);
+
+  // Subscription state
+  const subscriptionExpiresAt = profile?.subscriptionExpiresAt
+    ? new Date(profile.subscriptionExpiresAt)
+    : null;
+  const daysLeft = subscriptionExpiresAt ? differenceInDays(subscriptionExpiresAt, new Date()) : null;
+  const isExpired = daysLeft !== null && daysLeft < 0;
+  const isExpiringSoon = daysLeft !== null && daysLeft >= 0 && daysLeft <= 5;
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -436,7 +454,7 @@ export default function TraineeDashboard() {
         uploadFormData.append('width', String(processedVideo.metadata.width));
         uploadFormData.append('height', String(processedVideo.metadata.height));
 
-        const uploadResponse = await fetch('/api/inquiry-media/upload', {
+        const uploadResponse = await fetch(resolveApiUrl('/api/inquiry-media/upload'), {
           method: 'POST',
           body: uploadFormData,
         });
@@ -460,83 +478,81 @@ export default function TraineeDashboard() {
         };
       }
 
-      if (!profile.uid.startsWith('mock-')) {
-        if (!profile.assignedTrainerId) {
-          throw new Error('No trainer is assigned to this trainee.');
-        }
-
-        const { data: inquiry, error } = await supabase
-          .from('inquiries')
-          .insert({
-          trainee_id: profile.uid,
-          trainer_id: profile.assignedTrainerId,
-          trainee_name: profile.displayName,
-          message,
-          urgency,
-          status: 'pending',
-          image: image || null,
-          audio_url: (audioBase64 as string) || null,
-          video_storage_provider: uploadedVideo?.objectKey ? 'r2' : null,
-          video_asset_type: uploadedVideo?.objectKey ? 'file' : null,
-          video_status: uploadedVideo?.objectKey ? 'ready' : null,
-          video_url: uploadedVideo?.canonicalUrl ?? null,
-          video_object_key: uploadedVideo?.objectKey ?? null,
-          video_mime_type: uploadedVideo?.contentType ?? null,
-          video_size_bytes: uploadedVideo?.fileSize ?? null,
-          video_duration_seconds: uploadedVideo?.durationSeconds ?? null,
-          video_width: uploadedVideo?.width ?? null,
-          video_height: uploadedVideo?.height ?? null,
-          video_expires_at: uploadedVideo?.expiresAt ?? null,
-          })
-          .select(
-            'id, message, urgency, image, audio_url, video_object_key, video_status, video_expires_at'
-          )
-          .single();
-
-        if (error || !inquiry) {
-          if (uploadedVideo?.objectKey) {
-            await fetch('/api/inquiry-media/delete', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                objectKey: uploadedVideo.objectKey,
-              }),
-            }).catch(() => null);
-          }
-
-          throw new Error(error?.message || 'Could not submit inquiry.');
-        }
-
-        const chatId = await findOrCreateChat(supabase, profile.uid, profile.assignedTrainerId);
-        const chatText = inquiry.urgency === 'High' ? `[High] ${inquiry.message}` : inquiry.message;
-
-        const { error: messageError } = await supabase.from('messages').insert({
-          chat_id: chatId,
-          sender_id: profile.uid,
-          text: chatText,
-          image_url: inquiry.image,
-          audio_url: inquiry.audio_url,
-          inquiry_id: inquiry.id,
-          inquiry_urgency: inquiry.urgency,
-          video_object_key: inquiry.video_object_key,
-          video_status: inquiry.video_status,
-          video_expires_at: inquiry.video_expires_at,
-        });
-
-        if (messageError) {
-          throw new Error(messageError.message || 'Could not send inquiry to trainer chat.');
-        }
-
-        await supabase
-          .from('chats')
-          .update({
-            last_message: uploadedVideo?.objectKey ? 'Sent an inquiry video' : chatText,
-            last_message_time: new Date().toISOString(),
-          })
-          .eq('id', chatId);
+      if (!profile.assignedTrainerId) {
+        throw new Error('No trainer is assigned to this trainee.');
       }
+
+      const { data: inquiry, error } = await supabase
+        .from('inquiries')
+        .insert({
+        trainee_id: profile.uid,
+        trainer_id: profile.assignedTrainerId,
+        trainee_name: profile.displayName,
+        message,
+        urgency,
+        status: 'pending',
+        image: image || null,
+        audio_url: (audioBase64 as string) || null,
+        video_storage_provider: uploadedVideo?.objectKey ? 'r2' : null,
+        video_asset_type: uploadedVideo?.objectKey ? 'file' : null,
+        video_status: uploadedVideo?.objectKey ? 'ready' : null,
+        video_url: uploadedVideo?.canonicalUrl ?? null,
+        video_object_key: uploadedVideo?.objectKey ?? null,
+        video_mime_type: uploadedVideo?.contentType ?? null,
+        video_size_bytes: uploadedVideo?.fileSize ?? null,
+        video_duration_seconds: uploadedVideo?.durationSeconds ?? null,
+        video_width: uploadedVideo?.width ?? null,
+        video_height: uploadedVideo?.height ?? null,
+        video_expires_at: uploadedVideo?.expiresAt ?? null,
+        })
+        .select(
+          'id, message, urgency, image, audio_url, video_object_key, video_status, video_expires_at'
+        )
+        .single();
+
+      if (error || !inquiry) {
+        if (uploadedVideo?.objectKey) {
+          await fetch(resolveApiUrl('/api/inquiry-media/delete'), {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              objectKey: uploadedVideo.objectKey,
+            }),
+          }).catch(() => null);
+        }
+
+        throw new Error(error?.message || 'Could not submit inquiry.');
+      }
+
+      const chatId = await findOrCreateChat(supabase, profile.uid, profile.assignedTrainerId);
+      const chatText = inquiry.urgency === 'High' ? `[High] ${inquiry.message}` : inquiry.message;
+
+      const { error: messageError } = await supabase.from('messages').insert({
+        chat_id: chatId,
+        sender_id: profile.uid,
+        text: chatText,
+        image_url: inquiry.image,
+        audio_url: inquiry.audio_url,
+        inquiry_id: inquiry.id,
+        inquiry_urgency: inquiry.urgency,
+        video_object_key: inquiry.video_object_key,
+        video_status: inquiry.video_status,
+        video_expires_at: inquiry.video_expires_at,
+      });
+
+      if (messageError) {
+        throw new Error(messageError.message || 'Could not send inquiry to trainer chat.');
+      }
+
+      await supabase
+        .from('chats')
+        .update({
+          last_message: uploadedVideo?.objectKey ? 'Sent an inquiry video' : chatText,
+          last_message_time: new Date().toISOString(),
+        })
+        .eq('id', chatId);
       
       setSubmitted(true);
       setTimeout(() => {
@@ -593,6 +609,39 @@ export default function TraineeDashboard() {
       </header>
 
       <main className="flex-1 px-6 mt-4">
+        {/* Subscription Banner */}
+        {(isExpired || isExpiringSoon) && (
+          <div className={`mb-6 rounded-3xl p-4 flex items-start gap-3 border ${
+            isExpired
+              ? 'bg-red-50 border-red-200 text-red-700'
+              : 'bg-amber-50 border-amber-200 text-amber-700'
+          }`}>
+            <div className={`mt-0.5 shrink-0 size-8 rounded-full flex items-center justify-center ${
+              isExpired ? 'bg-red-100' : 'bg-amber-100'
+            }`}>
+              {isExpired
+                ? <AlertTriangle className="w-4 h-4" />
+                : <Clock className="w-4 h-4" />}
+            </div>
+            <div>
+              <p className="font-bold text-sm">
+                {isExpired
+                  ? (lang === 'am' ? 'የደንበኝነት ምዝገባ አብቅቷል' : 'Subscription Expired')
+                  : (lang === 'am' ? 'ደንበኝነት ምዝገባ እያለቀ ነው' : 'Subscription Expiring Soon')}
+              </p>
+              <p className="text-xs mt-0.5 font-medium opacity-80">
+                {isExpired
+                  ? (lang === 'am'
+                    ? `ደንበኝነት ምዝገባዎ ${subscriptionExpiresAt ? format(subscriptionExpiresAt, 'MMM d, yyyy') : ''} ጀምሮ ቆሟል። ለማደስ አሰልጣኝዎን ያነጋግሩ።`
+                    : `Your subscription stopped on ${subscriptionExpiresAt ? format(subscriptionExpiresAt, 'MMM d, yyyy') : ''}. Contact your trainer to reactivate.`)
+                  : (lang === 'am'
+                    ? `ደንበኝነት ምዝገባዎ በ${daysLeft} ቀን ውስጥ ያልቃል።`
+                    : `Your subscription expires in ${daysLeft} day${daysLeft === 1 ? '' : 's'}.`)}
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight mb-2 text-slate-900">{t.howCanWeHelp}</h1>
           <p className="text-slate-500 font-medium">{t.subtitle}</p>

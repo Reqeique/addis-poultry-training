@@ -3,13 +3,32 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
+  /* Premium signature brand colors */
   --color-primary: #8DEB71;
-  --color-primary-dark: #123315;
-  --color-background-light: #F8F9FA;
-  --color-background-dark: #121212;
+  --color-primary-dark: #123315; /* Dark forest green for readable text on vibrant green buttons */
+  
+  /* Core dark theme backgrounds */
+  --color-background-light: #090d16; /* Deep dark slate-blue background */
+  --color-background-dark: #05070c;
+  
+  /* Core dark theme card / container overrides */
+  --color-white: #111625; /* Cards and panel backgrounds become deep slate/blue-gray */
+  --color-slate-50: #1b2030; /* Inner surfaces, input backgrounds */
+  --color-slate-100: #222b40; /* Border colors */
+  --color-slate-200: #2d374f; /* Hover states and dividers */
+  --color-slate-300: #475569;
+  
+  /* Typography overrides for excellent dark-theme contrast */
+  --color-slate-400: #94a3b8; /* Muted text / placeholder */
+  --color-slate-500: #cbd5e1; /* Secondary text */
+  --color-slate-600: #e2e8f0; /* Body text */
+  --color-slate-700: #f1f5f9; /* Stronger body text */
+  --color-slate-800: #f8fafc; /* Headings */
+  --color-slate-900: #ffffff; /* Primary titles and high-contrast text */
+  
   --font-sans: var(--font-sans), sans-serif;
 }
 
 body {
-  @apply bg-background-light text-slate-900;
+  @apply bg-background-light text-slate-700 antialiased selection:bg-primary selection:text-primary-dark;
 }

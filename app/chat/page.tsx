@@ -7,13 +7,16 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Phone, MoreVertical, Image as ImageIcon, Send, Camera, Mic, Square, Trash2, Video } from 'lucide-react';
 import Image from 'next/image';
 import { format } from 'date-fns';
+import { resolveApiUrl } from '@/lib/api-helper';
 
 interface Message {
   id: string;
   sender_id: string;
   text?: string;
-  image_url?: string;
-  audio_url?: string;
+  // Either a base64 data URI (legacy) or an R2 object key ("chat/images/...")  
+  image_url?: string | null;
+  // Either a base64 data URI (legacy) or an R2 object key ("chat/audio/...")
+  audio_url?: string | null;
   inquiry_id?: string | null;
   inquiry_urgency?: string | null;
   video_object_key?: string | null;
@@ -22,14 +25,21 @@ interface Message {
   created_at: string;
 }
 
-const MOCK_MESSAGES = [
-  { id: 'm1', sender_id: 'mock-trainer-123', text: 'Hi there! How are the new chicks settling into the brooder today? Any temperature issues?', created_at: new Date(Date.now() - 1000 * 60 * 5).toISOString() },
-  { id: 'm2', sender_id: 'peer-id', text: 'They seem a bit huddled in one corner. I took a photo of the current setup. Is the lamp too high?', image_url: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDr7RgmbVjL_no83E1WcetcxGTGCoYYLQxDQ8i_XH4QRvEylF1iI6UhfpXtXed8lihxuRbN4cihbfsehvbNHQB8_ybRZ2bk8cSySAPUt87yP5NcT0Cya9p9_lnF-dhCbaC9bbRGGEP01IlvkGhCzfHttXrsDkCodgNNxtfMvK4Zr-nwmHORCipwyjE8vg2Z9015J1oQrvZ0DwiF4XElUdh2Za3w60uw5-k0JercVM0jfnXAc3tOQQYd6_ou-DTVRsEcZgPPIcZVplo', created_at: new Date(Date.now() - 1000 * 60 * 2).toISOString() },
-  { id: 'm3', sender_id: 'mock-trainer-123', text: 'If they are huddling directly under the lamp, they\'re cold. If they are huddling in a corner away from it, there might be a draft. Let\'s try lowering the lamp by 2 inches first.', created_at: new Date(Date.now() - 1000 * 60 * 1).toISOString() },
-];
+const PAGE_SIZE = 50;
+
+/** Returns the src to use for a stored media value.
+ *  Legacy rows stored full base64 data URIs; new rows store R2 object keys. */
+function mediaSrc(value: string | null | undefined, apiPrefix: string): string | null {
+  if (!value) return null;
+  if (value.startsWith('data:') || value.startsWith('http')) return value;
+  // R2 object key — route through the signed-URL proxy
+  return resolveApiUrl(`${apiPrefix}/${value.replace(/^chat\//, '')}`);
+}
+
+
 
 function ChatContent() {
-  const { profile } = useAuthStore();
+  const { profile, loading: authLoading } = useAuthStore();
   const router = useRouter();
   const searchParams = useSearchParams();
   const peerId = searchParams.get('peerId') as string;
@@ -40,11 +50,18 @@ function ChatContent() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
-  
-  const [image, setImage] = useState<string | null>(null);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const [hasOlderMessages, setHasOlderMessages] = useState(false);
+  const [oldestCursor, setOldestCursor] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  // image: file object for new upload; imagePreview: local object URL for preview only
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -91,49 +108,45 @@ function ChatContent() {
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImage(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
+    if (!file) return;
+    // Store the File for R2 upload; create a local object URL just for preview
+    setImageFile(file);
+    const preview = URL.createObjectURL(file);
+    setImagePreview((prev) => { if (prev) URL.revokeObjectURL(prev); return preview; });
   };
 
   // Fetch peer profile
   useEffect(() => {
     if (!peerId) return;
-    if (profile?.uid.startsWith('mock-')) {
-      setTimeout(() => {
-        setPeer({
-          uid: peerId,
-          displayName: 'Trainee User',
-          role: 'trainee',
-          email: 'mock@mock.com',
-          createdAt: new Date(),
-          photoURL: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBrKkDmaDcMTNxR572A-aFLLk__o0XOovMJ1VJs8MIHhW95wXrQ-GGKnG36IBMZjvZ8pMLQ3YVgTkkqWlKhutFloCO_K_bRIlpamgPilNJ8pcxto2lJuqJXZuHowLXPULwuVqF2HPbGcVOn8OV90tAfCYCyvRjmGpz2W4ZomGhfKm1IidUHlC5MIO8Pa3ZpU0pEWCOF-TM1zSE7zrhQ1iPkdy1Oa-8GpDfPoZxsA7jRJaHvPpRaYjGbVldG_-JSBlRDPQlUC7xVw7c'
-        });
-      }, 0);
-      return;
-    }
 
     const fetchPeer = async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', peerId)
-        .single();
-      
-      if (data) {
-        setPeer({
-          uid: data.id,
-          displayName: data.display_name,
-          email: data.email || '',
-          photoURL: data.photo_url || '',
-          role: data.role as 'trainer' | 'trainee',
-          focusArea: data.focus_area || '',
-          createdAt: data.created_at,
-        });
+      try {
+        const { data, error: peerError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', peerId)
+          .single();
+        
+        if (peerError) throw peerError;
+        
+        if (data) {
+          setPeer({
+            uid: data.id,
+            displayName: data.display_name,
+            email: data.email || '',
+            photoURL: data.photo_url || '',
+            role: data.role as 'trainer' | 'trainee',
+            focusArea: data.focus_area || '',
+            createdAt: data.created_at,
+          });
+        } else {
+          setError('User profile not found.');
+          setLoading(false);
+        }
+      } catch (err: any) {
+        console.error('Error fetching peer:', err);
+        setError(err.message || 'Could not fetch peer profile.');
+        setLoading(false);
       }
     };
     fetchPeer();
@@ -141,57 +154,67 @@ function ChatContent() {
 
   // Find or create chat
   useEffect(() => {
-    if (!profile || !peerId) return;
-
-    if (profile.uid.startsWith('mock-')) {
-      setTimeout(() => {
-        setChatId('mock-chat-123');
-      }, 0);
+    // Wait for auth to resolve before doing anything
+    if (authLoading) return;
+    if (!profile || !peerId) {
+      setLoading(false);
       return;
     }
 
     const findOrCreateChat = async () => {
-      // Find existing chat between two users
-      const { data: myChats } = await supabase
-        .from('chat_participants')
-        .select('chat_id')
-        .eq('user_id', profile.uid);
-
-      if (myChats && myChats.length > 0) {
-        const chatIds = myChats.map(c => c.chat_id);
-        const { data: existingChat } = await supabase
+      try {
+        // Find existing chat between two users
+        const { data: myChats, error: myChatsError } = await supabase
           .from('chat_participants')
           .select('chat_id')
-          .eq('user_id', peerId)
-          .in('chat_id', chatIds)
-          .maybeSingle();
+          .eq('user_id', profile.uid);
 
-        if (existingChat) {
-          setChatId(existingChat.chat_id);
-          return;
+        if (myChatsError) throw myChatsError;
+
+        if (myChats && myChats.length > 0) {
+          const chatIds = myChats.map(c => c.chat_id);
+          const { data: existingChat, error: existingChatError } = await supabase
+            .from('chat_participants')
+            .select('chat_id')
+            .eq('user_id', peerId)
+            .in('chat_id', chatIds)
+            .maybeSingle();
+
+          if (existingChatError) throw existingChatError;
+
+          if (existingChat) {
+            setChatId(existingChat.chat_id);
+            return;
+          }
         }
-      }
 
-      // If none found, create new chat + participants
-      const { data: newChat, error: chatError } = await supabase
-        .from('chats')
-        .insert({})
-        .select('id')
-        .single();
+        // If none found, create new chat + participants
+        const { data: newChat, error: chatError } = await supabase
+          .from('chats')
+          .insert({})
+          .select('id')
+          .single();
 
-      if (!chatError && newChat) {
-        await supabase.from('chat_participants').insert([
-          { chat_id: newChat.id, user_id: profile.uid },
-          { chat_id: newChat.id, user_id: peerId }
-        ]);
-        setChatId(newChat.id);
-      } else if (chatError) {
-        console.error('Could not create chat:', chatError);
+        if (chatError) throw chatError;
+
+        if (newChat) {
+          const { error: participantsError } = await supabase.from('chat_participants').insert([
+            { chat_id: newChat.id, user_id: profile.uid },
+            { chat_id: newChat.id, user_id: peerId }
+          ]);
+          if (participantsError) throw participantsError;
+          
+          setChatId(newChat.id);
+        }
+      } catch (err: any) {
+        console.error('Error finding/creating chat:', err);
+        setError(err.message || 'Could not establish chat connection.');
+        setLoading(false);
       }
     };
 
     findOrCreateChat();
-  }, [profile, peerId, supabase]);
+  }, [profile, authLoading, peerId, supabase]);
 
   const scrollToBottom = () => {
     setTimeout(() => {
@@ -199,30 +222,34 @@ function ChatContent() {
     }, 100);
   };
 
-  // Listen to messages
+  // Listen to messages — load only the latest PAGE_SIZE to keep the DB payload tiny
   useEffect(() => {
     if (!chatId) return;
 
-    if (profile?.uid.startsWith('mock-')) {
-      setTimeout(() => {
-        setMessages(MOCK_MESSAGES.map(m => m.sender_id === 'peer-id' ? { ...m, sender_id: peerId } : m) as Message[]);
-        setLoading(false);
-        scrollToBottom();
-      }, 0);
-      return;
-    }
-
     const fetchMessages = async () => {
-      const { data } = await supabase
-        .from('messages')
-        .select('*')
-        .eq('chat_id', chatId)
-        .order('created_at', { ascending: true });
-      
-      if (data) {
-        setMessages(data);
+      try {
+        // Fetch newest PAGE_SIZE messages (descending) then reverse for display
+        const { data, error: msgError } = await supabase
+          .from('messages')
+          .select('id, sender_id, text, image_url, audio_url, inquiry_id, inquiry_urgency, video_object_key, video_status, video_expires_at, created_at')
+          .eq('chat_id', chatId)
+          .order('created_at', { ascending: false })
+          .limit(PAGE_SIZE);
+        
+        if (msgError) throw msgError;
+
+        if (data) {
+          const ordered = [...data].reverse();
+          setMessages(ordered);
+          setHasOlderMessages(data.length === PAGE_SIZE);
+          setOldestCursor(ordered[0]?.created_at ?? null);
+          scrollToBottom();
+        }
+      } catch (err: any) {
+        console.error('Error fetching messages:', err);
+        setError(err.message || 'Could not load messages.');
+      } finally {
         setLoading(false);
-        scrollToBottom();
       }
     };
 
@@ -246,56 +273,113 @@ function ChatContent() {
     };
   }, [chatId, peerId, profile?.uid, supabase]);
 
+  const loadOlderMessages = async () => {
+    if (!chatId || !oldestCursor || loadingOlder) return;
+    setLoadingOlder(true);
+    try {
+      const { data, error: msgError } = await supabase
+        .from('messages')
+        .select('id, sender_id, text, image_url, audio_url, inquiry_id, inquiry_urgency, video_object_key, video_status, video_expires_at, created_at')
+        .eq('chat_id', chatId)
+        .lt('created_at', oldestCursor)
+        .order('created_at', { ascending: false })
+        .limit(PAGE_SIZE);
+      if (msgError) throw msgError;
+      if (data && data.length > 0) {
+        const ordered = [...data].reverse();
+        setMessages(prev => [...ordered, ...prev]);
+        setOldestCursor(ordered[0].created_at);
+        setHasOlderMessages(data.length === PAGE_SIZE);
+      } else {
+        setHasOlderMessages(false);
+      }
+    } catch (err) {
+      console.error('Error loading older messages:', err);
+    } finally {
+      setLoadingOlder(false);
+    }
+  };
+
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if ((!newMessage.trim() && !image && !audioBlob) || !chatId || !profile) return;
+    if ((!newMessage.trim() && !imageFile && !audioBlob) || !chatId || !profile || isSending) return;
 
     const text = newMessage;
-    setNewMessage(''); // Optimistic clear
-    const currentImage = image;
+    const currentImageFile = imageFile;
     const currentAudioBlob = audioBlob;
-    
-    setImage(null);
+
+    // Optimistic clear
+    setNewMessage('');
+    setImageFile(null);
+    setImagePreview((prev) => { if (prev) URL.revokeObjectURL(prev); return null; });
     setAudioBlob(null);
     setAudioUrl(null);
+    setIsSending(true);
 
-    let audioBase64 = null;
-    if (currentAudioBlob) {
-      const reader = new FileReader();
-      reader.readAsDataURL(currentAudioBlob);
-      audioBase64 = await new Promise((resolve) => {
-        reader.onloadend = () => resolve(reader.result);
-      });
-    }
+    let imageObjectKey: string | null = null;
+    let audioObjectKey: string | null = null;
 
-    if (profile.uid.startsWith('mock-')) {
-      const newMsg: Message = {
-        id: Math.random().toString(),
+    try {
+      // Upload image to R2 (avoids storing base64 in DB)
+      if (currentImageFile) {
+        const fd = new FormData();
+        fd.append('file', currentImageFile);
+        const res = await fetch(resolveApiUrl('/api/chat-media/upload'), { method: 'POST', body: fd });
+        if (!res.ok) throw new Error('Image upload failed.');
+        const json = await res.json();
+        imageObjectKey = json.objectKey as string;
+      }
+
+      // Upload audio to R2
+      if (currentAudioBlob) {
+        const audioFile = new File([currentAudioBlob], 'voice.webm', { type: currentAudioBlob.type || 'audio/webm' });
+        const fd = new FormData();
+        fd.append('file', audioFile);
+        const res = await fetch(resolveApiUrl('/api/chat-media/upload'), { method: 'POST', body: fd });
+        if (!res.ok) throw new Error('Audio upload failed.');
+        const json = await res.json();
+        audioObjectKey = json.objectKey as string;
+      }
+
+      const { error: msgError } = await supabase.from('messages').insert({
+        chat_id: chatId,
         sender_id: profile.uid,
-        text: text,
-        image_url: currentImage || undefined,
-        audio_url: (audioBase64 as string) || undefined,
-        created_at: new Date().toISOString()
-      };
-      setMessages(prev => [...prev, newMsg]);
-      scrollToBottom();
-      return;
+        text: text || null,
+        image_url: imageObjectKey,
+        audio_url: audioObjectKey,
+      });
+
+      if (msgError) throw msgError;
+
+      await supabase.from('chats').update({
+        last_message: text || (imageObjectKey ? 'Sent an image' : 'Sent a voice message'),
+        last_message_time: new Date().toISOString(),
+      }).eq('id', chatId);
+    } catch (err: any) {
+      console.error('Error sending message:', err);
+      setNewMessage(text); // Restore so user can retry
+    } finally {
+      setIsSending(false);
     }
-
-    await supabase.from('messages').insert({
-      chat_id: chatId,
-      sender_id: profile.uid,
-      text: text,
-      image_url: currentImage || null,
-      audio_url: (audioBase64 as string) || null,
-    });
-
-    // Update last message in chat
-    await supabase.from('chats').update({
-      last_message: text || (currentImage ? 'Sent an image' : 'Sent a voice message'),
-      last_message_time: new Date().toISOString(),
-    }).eq('id', chatId);
   };
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-6 text-center">
+        <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-4">
+          <Trash2 className="w-8 h-8" />
+        </div>
+        <h2 className="text-lg font-bold text-slate-900 mb-2">Something went wrong</h2>
+        <p className="text-slate-600 mb-6 max-w-sm">{error}</p>
+        <button
+          onClick={() => router.back()}
+          className="px-6 py-2.5 bg-primary text-primary-dark font-semibold rounded-xl hover:bg-[#7ED465] transition-all"
+        >
+          Go Back
+        </button>
+      </div>
+    );
+  }
 
   if (!profile || loading || !peer) {
     return <div className="min-h-screen flex items-center justify-center bg-background-light dark:bg-background-dark"><div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div></div>;
@@ -339,6 +423,19 @@ function ChatContent() {
 
       {/* Chat Area */}
       <main className="flex-1 overflow-y-auto p-4 space-y-6 bg-slate-50/50">
+        {/* Load older messages */}
+        {hasOlderMessages && (
+          <div className="flex justify-center">
+            <button
+              onClick={loadOlderMessages}
+              disabled={loadingOlder}
+              className="px-4 py-2 text-xs font-bold text-slate-500 bg-white border border-slate-200 rounded-full shadow-sm hover:border-primary hover:text-primary-dark transition-all disabled:opacity-50"
+            >
+              {loadingOlder ? 'Loading...' : 'Load older messages'}
+            </button>
+          </div>
+        )}
+
         {/* Date Divider */}
         <div className="flex justify-center my-2">
           <span className="px-4 py-1.5 bg-white border border-slate-100 rounded-full text-[10px] font-bold text-slate-400 uppercase tracking-widest shadow-sm">
@@ -376,17 +473,23 @@ function ChatContent() {
                   {msg.text && <p className="text-[15px] leading-relaxed">{msg.text}</p>}
                 </div>
                 
-                {msg.image_url && (
-                  <div className={`w-full max-w-[240px] rounded-2xl overflow-hidden shadow-sm border-2 ${isMe ? 'border-primary' : 'border-slate-100 bg-white p-1'}`}>
-                    <Image src={msg.image_url} alt="Attached media" width={240} height={240} className="w-full h-auto rounded-xl" referrerPolicy="no-referrer" />
-                  </div>
-                )}
+                {msg.image_url && (() => {
+                  const src = mediaSrc(msg.image_url, '/api/chat-media');
+                  return src ? (
+                    <div className={`w-full max-w-[240px] rounded-2xl overflow-hidden shadow-sm border-2 ${isMe ? 'border-primary' : 'border-slate-100 bg-white p-1'}`}>
+                      <Image src={src} alt="Attached media" width={240} height={240} loading="lazy" className="w-full h-auto rounded-xl" referrerPolicy="no-referrer" />
+                    </div>
+                  ) : null;
+                })()}
 
-                {msg.audio_url && (
-                  <div className={`w-full max-w-[240px] rounded-2xl shadow-sm border ${isMe ? 'bg-[#E5F5E5] border-primary/20' : 'bg-white border-slate-100'} p-2.5`}>
-                    <audio src={msg.audio_url} controls className="w-full h-10" />
-                  </div>
-                )}
+                {msg.audio_url && (() => {
+                  const src = mediaSrc(msg.audio_url, '/api/chat-media');
+                  return src ? (
+                    <div className={`w-full max-w-[240px] rounded-2xl shadow-sm border ${isMe ? 'bg-[#E5F5E5] border-primary/20' : 'bg-white border-slate-100'} p-2.5`}>
+                      <audio src={src} controls preload="none" className="w-full h-10" />
+                    </div>
+                  ) : null;
+                })()}
 
                 {msg.inquiry_id && msg.video_object_key && msg.video_status !== 'expired' && (
                   <div className={`w-full max-w-[320px] rounded-2xl shadow-sm border ${isMe ? 'bg-[#E5F5E5] border-primary/20' : 'bg-white border-slate-100'} p-2.5`}>
@@ -397,8 +500,9 @@ function ChatContent() {
                     <video
                       key={msg.id}
                       controls
+                      preload="none"
                       className="w-full rounded-xl bg-black"
-                      src={`/api/inquiries/${msg.inquiry_id}/video`}
+                      src={resolveApiUrl(`/api/inquiries/${msg.inquiry_id}/video`)}
                     />
                   </div>
                 )}
@@ -417,12 +521,15 @@ function ChatContent() {
       {/* Bottom Input Bar */}
       <footer className="p-4 bg-white border-t border-slate-100 flex flex-col gap-3 pb-safe z-10 shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.02)]">
         {/* Previews */}
-        {(image || audioUrl) && (
+        {(imagePreview || audioUrl) && (
           <div className="flex flex-col gap-2 mb-1">
-            {image && (
+            {imagePreview && (
               <div className="relative w-24 h-24 rounded-2xl overflow-hidden border-2 border-slate-100 shadow-sm">
-                <Image src={image} alt="Preview" width={96} height={96} className="w-full h-full object-cover" />
-                <button type="button" onClick={() => setImage(null)} className="absolute top-1.5 right-1.5 p-1.5 bg-black/60 backdrop-blur-sm text-white rounded-full hover:bg-black/80 transition-colors">
+                <Image src={imagePreview} alt="Preview" width={96} height={96} className="w-full h-full object-cover" />
+                <button type="button" onClick={() => {
+                  setImageFile(null);
+                  setImagePreview((prev) => { if (prev) URL.revokeObjectURL(prev); return null; });
+                }} className="absolute top-1.5 right-1.5 p-1.5 bg-black/60 backdrop-blur-sm text-white rounded-full hover:bg-black/80 transition-colors">
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -468,7 +575,7 @@ function ChatContent() {
             />
             <button 
               type="submit"
-              disabled={(!newMessage.trim() && !image && !audioBlob)}
+              disabled={(!newMessage.trim() && !imageFile && !audioBlob)}
               className="p-2.5 bg-primary text-primary-dark rounded-full hover:bg-[#7ED465] transition-all active:scale-90 shadow-sm disabled:opacity-50 disabled:active:scale-100 shrink-0 ml-1.5 mb-1"
             >
               <Send className="w-5 h-5 -ml-0.5" />

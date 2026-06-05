@@ -17,6 +17,8 @@ export interface UserProfile {
   flockCount?: number;
   isActive?: boolean;
   createdAt: any;
+  subscriptionExpiresAt?: string | null;
+  lastPaymentAt?: string | null;
 }
 
 interface AuthState {

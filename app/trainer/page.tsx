@@ -8,68 +8,79 @@ import { Search, Bell, Zap, MessageSquare, Clock, ChevronRight, Plus, Settings, 
 import Image from 'next/image';
 import { TrainerBottomNav } from '@/components/TrainerBottomNav';
 import Link from 'next/link';
-import { format } from 'date-fns';
-
-const MOCK_TRAINEES: UserProfile[] = [
-  { uid: 't1', email: 'david.mwangi@example.com', phoneNumber: '+254 701 234 567', location: 'Nairobi Region', farmSize: '2 Acres', flockCount: 1500, createdAt: new Date('2023-10-15'), displayName: 'David Mwangi', role: 'trainee', focusArea: 'Breeder', photoURL: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBrKkDmaDcMTNxR572A-aFLLk__o0XOovMJ1VJs8MIHhW95wXrQ-GGKnG36IBMZjvZ8pMLQ3YVgTkkqWlKhutFloCO_K_bRIlpamgPilNJ8pcxto2lJuqJXZuHowLXPULwuVqF2HPbGcVOn8OV90tAfCYCyvRjmGpz2W4ZomGhfKm1IidUHlC5MIO8Pa3ZpU0pEWCOF-TM1zSE7zrhQ1iPkdy1Oa-8GpDfPoZxsA7jRJaHvPpRaYjGbVldG_-JSBlRDPQlUC7xVw7c' },
-  { uid: 't2', email: 'sarah.j@example.com', phoneNumber: '+254 722 987 654', location: 'Kiambu County', farmSize: '1.5 Acres', flockCount: 800, createdAt: new Date('2024-01-20'), displayName: 'Sarah Johnson', role: 'trainee', focusArea: 'Broilers', photoURL: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAjKEK-D5hM57k7T3tVefYS55bb77bY7ADNwThjXbcfeaE6eixbQmdj7HGisV2zz2ojF6gYQ2ek35zT8zL3uwTji0dqcDcuX8L8o_G93F4raXQwAlTTl2K9idjBxZ1cGro6pDebnkHBa5ANMLoigDjze3K6FW1p1yyCrWKYozGb1knNt97Vc6mZNBZsE_7PRY_w5e2mZLjQ99pNT8Fz9IfQUFKlgM9Mp2OOM3IhHpaTZSw2BenMDr2UrGTYMQybU11wubll4kTszKE' },
-  { uid: 't3', email: 'anita.peters@example.com', phoneNumber: '+254 733 456 789', location: 'Nakuru Town', farmSize: '3 Acres', flockCount: 2500, createdAt: new Date('2024-02-10'), displayName: 'Anita Peters', role: 'trainee', focusArea: 'Layers', photoURL: 'https://lh3.googleusercontent.com/aida-public/AB6AXuA_hPuCc3495XzKOPJdx2Hs9K2CVYkJtCPkgL7XA0SYaz2bItJXAjyM0cYh-y1vWKB02mCFnfatdCtYmmgkBzptELwW74Q34-iDg1JJxC06iNZ-dso0mCWCOrScKdJwnXMVvIJu6lUO8qRTDqQ1YRXj1TBkomTyGRxfq44h4YVjiPcbDb41XK0CCHHolyczsBMaUVHm_gpPl4UmlbZPxw8pBWBYzQjaugTsM_cHuLf2PVP8yXu9NAqU5pureYYRdmtYchIRqM_R0hs' },
-  { uid: 't4', email: 'robert.kiprop@example.com', phoneNumber: '+254 711 222 333', location: 'Eldoret', farmSize: '5 Acres', flockCount: 5000, createdAt: new Date('2024-04-05'), displayName: 'Robert Kiprop', role: 'trainee', focusArea: 'Hatchery', photoURL: '' },
-];
+import { format, differenceInDays } from 'date-fns';
 
 export default function TrainerDashboard() {
-  const { profile } = useAuthStore();
+  const { profile, loading: authLoading } = useAuthStore();
   const router = useRouter();
   const supabase = createClient();
   const [trainees, setTrainees] = useState<UserProfile[]>([]);
   const [selectedTrainee, setSelectedTrainee] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
+  const [chatsCount, setChatsCount] = useState(12);
 
   useEffect(() => {
-    if (!profile) return;
+    // Still waiting for auth to resolve — don't set loading=false yet
+    if (authLoading) return;
+    // Auth resolved but no profile (not logged in)
+    if (!profile) {
+      setLoading(false);
+      return;
+    }
     if (profile.role !== 'trainer') {
       router.push('/trainee');
       return;
     }
 
-    if (profile.uid.startsWith('mock-')) {
-      setTimeout(() => {
-        setTrainees(MOCK_TRAINEES);
-        setLoading(false);
-      }, 0);
-      return;
-    }
-
     const fetchTrainees = async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('role', 'trainee')
-        .eq('assigned_trainer_id', profile.uid);
-      
-      if (data) {
-        const mapped = data.map(d => ({
-          uid: d.id,
-          displayName: d.display_name,
-          email: d.email || '',
-          photoURL: d.photo_url || '',
-          role: d.role as 'trainer' | 'trainee',
-          focusArea: d.focus_area || '',
-          phoneNumber: d.phone_number,
-          location: d.location || '',
-          farmSize: d.farm_size || '',
-          flockCount: d.flock_count || 0,
-          is_active: d.is_active,
-          createdAt: d.created_at,
-        }));
-        setTrainees(mapped as any);
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('role', 'trainee')
+          .eq('assigned_trainer_id', profile.uid);
+        
+        if (error) throw error;
+        
+        if (data) {
+          const mapped = data.map(d => ({
+            uid: d.id,
+            displayName: d.display_name,
+            email: d.email || '',
+            photoURL: d.photo_url || '',
+            role: d.role as 'trainer' | 'trainee',
+            focusArea: d.focus_area || '',
+            phoneNumber: d.phone_number,
+            location: d.location || '',
+            farmSize: d.farm_size || '',
+            flockCount: d.flock_count || 0,
+            isActive: d.is_active,
+            createdAt: d.created_at,
+            subscriptionExpiresAt: d.subscription_expires_at ?? null,
+            lastPaymentAt: d.last_payment_at ?? null,
+          }));
+          setTrainees(mapped as any);
+        }
+
+        const { count, error: countError } = await supabase
+          .from('chat_participants')
+          .select('chat_id', { count: 'exact', head: true })
+          .eq('user_id', profile.uid);
+        
+        if (countError) throw countError;
+        
+        setChatsCount(count || 0);
+      } catch (err) {
+        console.error('Error fetching trainees:', err);
+      } finally {
         setLoading(false);
       }
     };
 
     fetchTrainees();
 
-    // Subscribe to changes in profiles
     const channel = supabase.channel('trainer_dashboard')
       .on('postgres_changes', { 
         event: '*', 
@@ -84,29 +95,30 @@ export default function TrainerDashboard() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [profile, router, supabase]);
+  }, [profile, authLoading, router, supabase]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push('/');
   };
 
-  const toggleTraineeStatus = async (trainee: UserProfile) => {
-    if (profile?.uid.startsWith('mock-')) {
-      const updated = trainees.map(t => 
-        t.uid === trainee.uid ? { ...t, is_active: !(t as any).is_active } : t
-      );
-      setTrainees(updated);
-      return;
+  const activateSubscription = async (trainee: UserProfile) => {
+    const { error } = await supabase.rpc('activate_trainee_subscription', {
+      trainee_profile_id: trainee.uid,
+    });
+    if (error) {
+      console.error('Error activating subscription:', error);
+      alert('Could not activate subscription: ' + error.message);
     }
+  };
 
+  const deactivateTrainee = async (trainee: UserProfile) => {
     const { error } = await supabase
       .from('profiles')
-      .update({ is_active: !(trainee as any).is_active })
+      .update({ is_active: false, updated_at: new Date().toISOString() })
       .eq('id', trainee.uid);
-    
     if (error) {
-      console.error('Error updating trainee status:', error);
+      console.error('Error deactivating trainee:', error);
     }
   };
 
@@ -134,7 +146,10 @@ export default function TrainerDashboard() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <button className="flex size-11 items-center justify-center rounded-full bg-white border border-slate-200 shadow-sm text-slate-700 hover:text-primary transition-colors hover:border-primary">
+          <button 
+            onClick={() => setShowSearch(!showSearch)}
+            className={`flex size-11 items-center justify-center rounded-full bg-white border shadow-sm text-slate-700 hover:text-primary transition-colors ${showSearch ? 'border-primary text-primary' : 'border-slate-200 hover:border-primary'}`}
+          >
             <Search className="w-5 h-5" />
           </button>
           <button onClick={handleLogout} className="flex size-11 items-center justify-center rounded-full bg-white border border-slate-200 shadow-sm text-red-500 hover:bg-red-50 transition-colors">
@@ -163,7 +178,9 @@ export default function TrainerDashboard() {
               </div>
               <p className="text-slate-500 text-xs font-bold uppercase tracking-wide">Active</p>
             </div>
-            <p className="text-3xl font-bold text-slate-900">{trainees.filter(t => (t as any).is_active !== false).length}</p>
+            <p className="text-3xl font-bold text-slate-900">
+              {trainees.filter(t => t.isActive !== false && (t as any).is_active !== false).length}
+            </p>
           </div>
 
           <div className="min-w-[140px] flex flex-col gap-2 rounded-3xl p-5 bg-white shadow-sm border border-slate-100">
@@ -173,88 +190,152 @@ export default function TrainerDashboard() {
               </div>
               <p className="text-slate-500 text-xs font-bold uppercase tracking-wide">Chats</p>
             </div>
-            <p className="text-3xl font-bold text-slate-900">12</p>
+            <p className="text-3xl font-bold text-slate-900">{chatsCount}</p>
           </div>
         </div>
 
+        {/* Search Input when toggled */}
+        {showSearch && (
+          <div className="mb-6 animate-in slide-in-from-top duration-200">
+            <input
+              type="text"
+              placeholder="Search trainees by name or focus area..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full h-12 px-5 rounded-2xl border-2 border-slate-100 bg-white placeholder:text-slate-400 focus:border-primary focus:outline-none transition-all shadow-sm font-medium"
+            />
+          </div>
+        )}
+
         {/* Action Header */}
         <div className="flex items-center justify-between mb-4 mt-2">
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900">Your Trainees</h2>
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900">
+            {searchQuery ? 'Filtered Trainees' : 'Your Trainees'}
+          </h2>
         </div>
 
         {/* Trainees List */}
         <div className="flex flex-col gap-4">
-          {trainees.map((trainee) => {
-            const isActive = (trainee as any).is_active !== false;
-            
-            return (
-              <div 
-                key={trainee.uid} 
-                className="flex flex-col p-4 bg-white rounded-3xl shadow-sm border border-slate-100 transition-all"
-              >
-                <div className="flex items-start gap-4">
-                  <div onClick={() => setSelectedTrainee(trainee)} className="relative size-14 shrink-0 block cursor-pointer">
-                    <div className="relative size-full rounded-full overflow-hidden bg-slate-100 border border-slate-200">
-                      {trainee.photoURL ? (
-                        <Image 
-                          src={trainee.photoURL} 
-                          alt={trainee.displayName} 
-                          fill 
-                          className="object-cover rounded-full" 
-                          referrerPolicy="no-referrer"
-                          unoptimized
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-slate-400 font-bold text-lg">
-                          {trainee.displayName.substring(0, 2).toUpperCase()}
-                        </div>
+          {(() => {
+            const filtered = trainees.filter(t => {
+              const query = searchQuery.toLowerCase();
+              return (
+                (t.displayName || '').toLowerCase().includes(query) ||
+                (t.focusArea || '').toLowerCase().includes(query) ||
+                (t.phoneNumber || '').includes(query)
+              );
+            });
+
+            if (filtered.length === 0) {
+              return (
+                <div className="py-12 bg-white rounded-3xl border border-slate-100 flex flex-col items-center justify-center text-center">
+                  <div className="size-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+                    <Users className="w-8 h-8 text-slate-300" />
+                  </div>
+                  <h3 className="font-bold text-slate-700 mb-1">
+                    {searchQuery ? 'No matches found' : 'No Trainees Yet'}
+                  </h3>
+                  <p className="text-sm text-slate-500 max-w-[240px] px-4">
+                    {searchQuery ? `We couldn't find any trainees matching "${searchQuery}"` : "You don't have any trainees assigned to you at the moment."}
+                  </p>
+                </div>
+              );
+            }
+
+            return filtered.map((trainee) => {
+              const isActive = trainee.isActive !== false && (trainee as any).is_active !== false;
+              const expiresAt = trainee.subscriptionExpiresAt ? new Date(trainee.subscriptionExpiresAt) : null;
+              const daysLeft = expiresAt ? differenceInDays(expiresAt, new Date()) : null;
+              const isExpiringSoon = daysLeft !== null && daysLeft >= 0 && daysLeft <= 5;
+              const isExpired = daysLeft !== null && daysLeft < 0;
+
+              return (
+                <div 
+                  key={trainee.uid} 
+                  className="flex flex-col p-4 bg-white rounded-3xl shadow-sm border border-slate-100 transition-all"
+                >
+                  <div className="flex items-start gap-4">
+                    <div onClick={() => setSelectedTrainee(trainee)} className="relative size-14 shrink-0 block cursor-pointer">
+                      <div className="relative size-full rounded-full overflow-hidden bg-slate-100 border border-slate-200">
+                        {trainee.photoURL ? (
+                          <Image 
+                            src={trainee.photoURL} 
+                            alt={trainee.displayName} 
+                            fill 
+                            className="object-cover rounded-full" 
+                            referrerPolicy="no-referrer"
+                            unoptimized
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-slate-400 font-bold text-lg">
+                            {trainee.displayName.substring(0, 2).toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+                      <span className={`absolute bottom-0 right-0 size-3.5 border-2 border-white rounded-full z-10 ${isActive ? 'bg-primary' : 'bg-red-400'}`}></span>
+                    </div>
+                    
+                    <div onClick={() => setSelectedTrainee(trainee)} className="flex-1 min-w-0 pt-0.5 block cursor-pointer">
+                      <div className="flex items-center justify-between gap-1 mb-1">
+                        <h3 className="font-bold text-slate-900 truncate text-lg leading-tight">{trainee.displayName}</h3>
+                        <span className="shrink-0 text-xs font-semibold px-2 py-1 rounded-full bg-slate-100 text-slate-500 uppercase tracking-wider">
+                          {trainee.focusArea || 'General'}
+                        </span>
+                      </div>
+                      <Link href={`/chat?peerId=${trainee.uid}`} onClick={(e) => e.stopPropagation()} className="inline-flex mt-1 text-sm text-slate-500 hover:text-primary truncate items-center gap-1.5 focus:text-primary transition-colors">
+                        <MessageSquare className="w-3.5 h-3.5" /> Tap to message
+                      </Link>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-semibold text-slate-500 uppercase tracking-widest">Subscription</span>
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded-md ${
+                          isActive
+                            ? isExpiringSoon
+                              ? 'text-amber-700 bg-amber-100'
+                              : 'text-primary-dark bg-[#E5F5E5]'
+                            : 'text-red-700 bg-red-100'
+                        }`}>
+                          {isActive ? (isExpiringSoon ? 'EXPIRING SOON' : 'ACTIVE') : 'INACTIVE'}
+                        </span>
+                      </div>
+                      {expiresAt && (
+                        <p className={`text-xs font-medium pl-0.5 ${
+                          isExpired ? 'text-red-500' : isExpiringSoon ? 'text-amber-600' : 'text-slate-400'
+                        }`}>
+                          {isExpired
+                            ? `Expired ${format(expiresAt, 'MMM d, yyyy')}`
+                            : `Expires ${format(expiresAt, 'MMM d, yyyy')} · ${daysLeft}d left`}
+                        </p>
                       )}
                     </div>
-                    <span className={`absolute bottom-0 right-0 size-3.5 border-2 border-white rounded-full z-10 ${isActive ? 'bg-primary' : 'bg-red-400'}`}></span>
-                  </div>
-                  
-                  <div onClick={() => setSelectedTrainee(trainee)} className="flex-1 min-w-0 pt-0.5 block cursor-pointer">
-                    <div className="flex items-center justify-between gap-1 mb-1">
-                      <h3 className="font-bold text-slate-900 truncate text-lg leading-tight">{trainee.displayName}</h3>
-                      <span className="shrink-0 text-xs font-semibold px-2 py-1 rounded-full bg-slate-100 text-slate-500 uppercase tracking-wider">
-                        {trainee.focusArea || 'General'}
-                      </span>
-                    </div>
-                    <Link href={`/chat?peerId=${trainee.uid}`} onClick={(e) => e.stopPropagation()} className="inline-flex mt-1 text-sm text-slate-500 hover:text-primary truncate items-center gap-1.5 focus:text-primary transition-colors">
-                      <MessageSquare className="w-3.5 h-3.5" /> Tap to message
-                    </Link>
+                    
+                    {/* Activate / Deactivate */}
+                    {isActive ? (
+                      <button 
+                        onClick={() => deactivateTrainee(trainee)}
+                        className="relative w-12 h-6 flex items-center rounded-full transition-colors duration-300 p-1 cursor-pointer outline-none focus:outline-none bg-primary"
+                        title="Deactivate"
+                      >
+                        <div className="size-4 bg-white rounded-full shadow-sm transform transition-transform duration-300 translate-x-6"></div>
+                      </button>
+                    ) : (
+                      <button 
+                        onClick={() => activateSubscription(trainee)}
+                        className="relative w-12 h-6 flex items-center rounded-full transition-colors duration-300 p-1 cursor-pointer outline-none focus:outline-none bg-slate-200 hover:bg-primary/40"
+                        title="Activate (+30 days)"
+                      >
+                        <div className="size-4 bg-white rounded-full shadow-sm transform transition-transform duration-300 translate-x-0"></div>
+                      </button>
+                    )}
                   </div>
                 </div>
-
-                <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-slate-500 uppercase tracking-widest pl-1">Subscription</span>
-                    <span className={`text-xs font-bold px-2 py-0.5 rounded-md ${isActive ? 'text-primary-dark bg-[#E5F5E5]' : 'text-red-700 bg-red-100'}`}>
-                      {isActive ? 'ACTIVE' : 'INACTIVE'}
-                    </span>
-                  </div>
-                  
-                  {/* Toggle Switch */}
-                  <button 
-                    onClick={() => toggleTraineeStatus(trainee)}
-                    className={`relative w-12 h-6 flex items-center rounded-full transition-colors duration-300 p-1 cursor-pointer outline-none focus:outline-none ${isActive ? 'bg-primary' : 'bg-slate-200'}`}
-                  >
-                    <div className={`size-4 bg-white rounded-full shadow-sm transform transition-transform duration-300 ${isActive ? 'translate-x-6' : 'translate-x-0'}`}></div>
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-          
-          {trainees.length === 0 && (
-            <div className="py-12 bg-white rounded-3xl border border-slate-100 flex flex-col items-center justify-center text-center">
-              <div className="size-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
-                <Users className="w-8 h-8 text-slate-300" />
-              </div>
-              <h3 className="font-bold text-slate-700 mb-1">No Trainees Yet</h3>
-              <p className="text-sm text-slate-500 max-w-[200px]">You don&apos;t have any trainees assigned to you at the moment.</p>
-            </div>
-          )}
+              );
+            });
+          })()}
         </div>
       </main>
 

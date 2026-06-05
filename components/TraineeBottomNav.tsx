@@ -1,14 +1,25 @@
 'use client';
 import Link from 'next/link';
 import { Home, User, Send } from 'lucide-react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useAuthStore } from '@/lib/store';
 
 export function TraineeBottomNav({ isAmharic }: { isAmharic: boolean }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { profile } = useAuthStore();
 
   const labels = {
     home: isAmharic ? 'መነሻ' : 'HOME',
     profile: isAmharic ? 'መገለጫ' : 'PROFILE',
+  };
+
+  const handleChatClick = () => {
+    if (!profile?.assignedTrainerId) {
+      alert('No trainer has been assigned to you yet. Please contact support.');
+      return;
+    }
+    router.push(`/chat?peerId=${profile.assignedTrainerId}`);
   };
 
   return (
@@ -23,7 +34,10 @@ export function TraineeBottomNav({ isAmharic }: { isAmharic: boolean }) {
         </Link>
 
         <div className="relative -top-6">
-          <button className="flex size-14 items-center justify-center bg-primary text-primary-dark rounded-full shadow-[0_8px_16px_-4px_rgba(141,235,113,0.5)] border-4 border-white transition-transform active:scale-95">
+          <button 
+            onClick={handleChatClick}
+            className="flex size-14 items-center justify-center bg-primary text-primary-dark rounded-full shadow-[0_8px_16px_-4px_rgba(141,235,113,0.5)] border-4 border-white transition-transform active:scale-95 hover:bg-[#7ED465]"
+          >
             <Send className="w-6 h-6 -ml-0.5" />
           </button>
         </div>

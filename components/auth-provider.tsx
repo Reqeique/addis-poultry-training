@@ -3,32 +3,79 @@
 import { useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore, UserProfile } from '@/lib/store';
-import { useRouter, usePathname } from 'next/navigation';
+
+/**
+ * Fetch the profile for the currently signed-in user.
+ *
+ * Two-tier approach — works on BOTH web and Android Capacitor:
+ *
+ *  Tier 1 – Direct query by auth_user_id (standard path)
+ *    • Look up the profile row that is already linked to the authenticated user ID.
+ *
+ *  Tier 2 – Query by email & link (first-login fallback)
+ *    • Look up by email (handles pre-seeded/new accounts where auth_user_id is not set yet).
+ *    • If found, update the profile row to set auth_user_id = user.id.
+ *    • Safe due to updated RLS policies allowing reads and updates of unlinked rows by email match.
+ */
+async function fetchProfile(
+  supabase: ReturnType<typeof createClient>,
+  userId: string,
+  userEmail: string | undefined,
+) {
+  // 1. Try direct query by auth_user_id (already linked path)
+  let { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('auth_user_id', userId)
+    .maybeSingle();
+
+  // 2. Fallback: query by email (handles first login for pre-seeded accounts)
+  if (!profile && userEmail) {
+    const { data: byEmail } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('email', userEmail)
+      .maybeSingle();
+
+    if (byEmail) {
+      // Link the profile row to this auth user
+      const { data: updated } = await supabase
+        .from('profiles')
+        .update({ auth_user_id: userId })
+        .eq('id', byEmail.id)
+        .select()
+        .maybeSingle();
+
+      if (updated) {
+        profile = updated;
+      }
+    }
+  }
+
+  return profile ?? null;
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { setUser, setProfile, setLoading } = useAuthStore();
-  const router = useRouter();
-  const pathname = usePathname();
   const supabase = createClient();
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       const user = session?.user ?? null;
       setUser(user);
-      
-      if (user) {
-        const response = await fetch('/api/profile/me', {
-          credentials: 'include',
-        });
 
-        const result = await response.json().catch(() => ({ profile: null }));
-        const profile = result.profile;
+      // Read pathname directly from window.location inside the client-side useEffect
+      const currentPath = window.location.pathname;
+
+      if (user) {
+        // --- Primary: query Supabase directly (works on Android + web) ---
+        const profile = await fetchProfile(supabase, user.id, user.email);
 
         if (profile) {
           if (!profile.is_active) {
             await supabase.auth.signOut();
             setProfile(null);
-            router.push('/');
+            window.location.replace('/');
             setLoading(false);
             return;
           }
@@ -47,44 +94,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             flockCount: profile.flock_count || 0,
             isActive: profile.is_active,
             createdAt: profile.created_at,
+            subscriptionExpiresAt: profile.subscription_expires_at ?? null,
+            lastPaymentAt: profile.last_payment_at ?? null,
           };
-          
+
           setProfile(storeProfile);
-          
-          // Redirect to appropriate dashboard if on login page
-          if (pathname === '/') {
-            if (storeProfile.role === 'trainer') {
-              router.push('/trainer');
-            } else {
-              router.push('/trainee');
-            }
+
+          // Redirect to the correct dashboard when on the login page
+          if (currentPath === '/') {
+            window.location.replace(storeProfile.role === 'trainer' ? '/trainer' : '/trainee');
           }
         } else {
+          // No profile found — sign out and send back to login
           await supabase.auth.signOut();
           setProfile(null);
-          if (pathname !== '/') {
-            router.push('/');
+          if (currentPath !== '/') {
+            window.location.replace('/');
           }
         }
       } else {
-        // Check if we are in bypass mode
-        const currentProfile = useAuthStore.getState().profile;
-        if (currentProfile?.uid.startsWith('mock-')) {
-          setLoading(false);
-          return;
-        }
-
         setProfile(null);
-        if (pathname !== '/') {
-          router.push('/');
+        if (currentPath !== '/') {
+          window.location.replace('/');
         }
       }
-      
+
       setLoading(false);
     });
 
     return () => subscription.unsubscribe();
-  }, [setUser, setProfile, setLoading, router, pathname, supabase]);
+  }, [setUser, setProfile, setLoading, supabase]);
 
   return <>{children}</>;
 }

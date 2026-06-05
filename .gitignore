@@ -5,3 +5,14 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Keystore & Android local properties
+android/app/*.jks
+android/local.properties
+
+# Build outputs and temporary/scratch directories
+out/
+scratch/
+.agents/
+supabase/.temp/
+

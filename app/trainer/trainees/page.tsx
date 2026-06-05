@@ -1,12 +1,13 @@
 'use client';
-
+ 
 import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { TrainerBottomNav } from '@/components/TrainerBottomNav';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore, UserProfile } from '@/lib/store';
 import { Loader2, Phone, Sprout, Users } from 'lucide-react';
-
+import { resolveApiUrl } from '@/lib/api-helper';
+ 
 export default function TraineesPage() {
   const router = useRouter();
   const supabase = createClient();
@@ -24,19 +25,14 @@ export default function TraineesPage() {
     farmSize: '',
     flockCount: '',
   });
-
+ 
   useEffect(() => {
     if (!profile) {
       return;
     }
-
+ 
     if (profile.role !== 'trainer') {
       router.push('/trainee');
-      return;
-    }
-
-    if (profile.uid.startsWith('mock-')) {
-      setLoading(false);
       return;
     }
 
@@ -89,35 +85,8 @@ export default function TraineesPage() {
         ? form.phoneNumber
         : `+${form.phoneNumber}`;
 
-      if (profile.uid.startsWith('mock-')) {
-        const mockTrainee: UserProfile = {
-          uid: `mock-${Date.now()}`,
-          email: '',
-          displayName: form.displayName.trim(),
-          role: 'trainee',
-          phoneNumber: normalizedPhone,
-          focusArea: form.focusArea.trim() || '',
-          farmSize: form.farmSize.trim() || '',
-          flockCount: form.flockCount ? Number(form.flockCount) : 0,
-          assignedTrainerId: profile.uid,
-          isActive: true,
-          createdAt: new Date().toISOString(),
-        };
 
-        setTrainees((current) => [mockTrainee, ...current]);
-        setSuccess('Trainee added to the demo roster.');
-        setForm({
-          displayName: '',
-          phoneNumber: '',
-          password: '',
-          focusArea: '',
-          farmSize: '',
-          flockCount: '',
-        });
-        return;
-      }
-
-      const response = await fetch('/api/trainer/trainees', {
+      const response = await fetch(resolveApiUrl('/api/trainer/trainees'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

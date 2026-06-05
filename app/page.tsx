@@ -9,6 +9,7 @@ import { Loader2, Lock, Phone } from 'lucide-react';
 import { buildPhoneLoginEmail, normalizePhoneNumber } from '@/lib/auth/phone-email';
 import { Logo } from '@/components/Logo';
 
+
 export default function LoginPage() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
@@ -18,30 +19,44 @@ export default function LoginPage() {
   const router = useRouter();
   const supabase = createClient();
 
-  const handleBypassTrainer = () => {
-    setProfile({
-      uid: 'mock-trainer-123',
-      email: 'expert@poultry.com',
-      displayName: 'Expert Sarah',
-      role: 'trainer',
-      focusArea: 'Brooding Management',
-      phoneNumber: '+251911223344',
-      createdAt: new Date()
-    });
-    router.push('/trainer');
+  const handleBypassTrainer = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      // Seed first
+      await fetch('/api/admin/seed-auth').catch(() => null);
+
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: '251911223344@phone.addis.local',
+        password: 'password123',
+      });
+
+      if (signInError) throw signInError;
+    } catch (err: any) {
+      setError(err.message || 'Could not sign in as trainer.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleBypassTrainee = () => {
-    setProfile({
-      uid: 'mock-trainee-123',
-      email: 'farmer@poultry.com',
-      displayName: 'Samuel Adebayor',
-      role: 'trainee',
-      focusArea: 'Marketing',
-      phoneNumber: '+251922334455',
-      createdAt: new Date()
-    });
-    router.push('/trainee');
+  const handleBypassTrainee = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      // Seed first
+      await fetch('/api/admin/seed-auth').catch(() => null);
+
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: '251922334455@phone.addis.local',
+        password: 'password123',
+      });
+
+      if (signInError) throw signInError;
+    } catch (err: any) {
+      setError(err.message || 'Could not sign in as trainee.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
