@@ -65,7 +65,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const supabase = supabaseRef.current;
 
   useEffect(() => {
+    // Safety net: if onAuthStateChange never fires within 7 s
+    // (e.g. Supabase Auth server unreachable, session cookie validation hangs),
+    // unblock the UI so the user sees the login form instead of a blank spinner.
+    const safetyTimer = setTimeout(() => {
+      console.warn('[AuthProvider] auth state did not resolve in 7 s — unblocking UI');
+      setLoading(false);
+    }, 7_000);
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      // Auth fired — cancel the safety net
+      clearTimeout(safetyTimer);
+
       const user = session?.user ?? null;
       setUser(user);
 
@@ -134,7 +145,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(safetyTimer);
+      subscription.unsubscribe();
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setUser, setProfile, setLoading]);
   // NOTE: `supabase` intentionally omitted from deps — it is a stable ref
