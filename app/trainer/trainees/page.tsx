@@ -1,6 +1,6 @@
 'use client';
  
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { TrainerBottomNav } from '@/components/TrainerBottomNav';
 import { createClient } from '@/lib/supabase/client';
@@ -10,7 +10,8 @@ import { resolveApiUrl } from '@/lib/api-helper';
  
 export default function TraineesPage() {
   const router = useRouter();
-  const supabase = createClient();
+  const supabaseRef = useRef(createClient());
+  const supabase = supabaseRef.current;
   const { profile } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -67,7 +68,8 @@ export default function TraineesPage() {
     };
 
     fetchTrainees();
-  }, [profile, router, supabase]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile, router]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();

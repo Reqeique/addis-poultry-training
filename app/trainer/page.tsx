@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuthStore, UserProfile } from '@/lib/store';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -13,7 +13,10 @@ import { format, differenceInDays } from 'date-fns';
 export default function TrainerDashboard() {
   const { profile, loading: authLoading } = useAuthStore();
   const router = useRouter();
-  const supabase = createClient();
+  // Stabilise the client so it never changes between renders and doesn't
+  // make the useEffect below re-run (and re-fetch) on every render cycle.
+  const supabaseRef = useRef(createClient());
+  const supabase = supabaseRef.current;
   const [trainees, setTrainees] = useState<UserProfile[]>([]);
   const [selectedTrainee, setSelectedTrainee] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -22,8 +25,17 @@ export default function TrainerDashboard() {
   const [chatsCount, setChatsCount] = useState(12);
 
   useEffect(() => {
+    // Safety net: if auth never resolves after 10 s, unblock the page
+    // so the user isn't stuck on a spinner forever.
+    const safetyTimer = setTimeout(() => {
+      setLoading(false);
+    }, 10_000);
+
     // Still waiting for auth to resolve — don't set loading=false yet
-    if (authLoading) return;
+    if (authLoading) return () => clearTimeout(safetyTimer);
+
+    clearTimeout(safetyTimer);
+
     // Auth resolved but no profile (not logged in)
     if (!profile) {
       setLoading(false);
@@ -95,7 +107,10 @@ export default function TrainerDashboard() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [profile, authLoading, router, supabase]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile, authLoading, router]);
+  // NOTE: `supabase` intentionally omitted from deps — it is a stable ref
+  // (created once via useRef) and must not trigger re-fetches on every render.
 
   const handleLogout = async () => {
     await supabase.auth.signOut();

@@ -133,7 +133,8 @@ export default function TraineeDashboard() {
   const { profile, loading: authLoading } = useAuthStore();
   const { isAmharic, setIsAmharic } = useAppStore();
   const router = useRouter();
-  const supabase = createClient();
+  const supabaseRef = useRef(createClient());
+  const supabase = supabaseRef.current;
   const [loading, setLoading] = useState(true);
   const lang = isAmharic ? 'am' : 'en';
   
@@ -267,7 +268,8 @@ export default function TraineeDashboard() {
     return () => {
       window.clearInterval(intervalId);
     };
-  }, [profile, supabase]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile]);
 
   const startRecording = async () => {
     try {

@@ -43,7 +43,8 @@ function ChatContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const peerId = searchParams.get('peerId') as string;
-  const supabase = createClient();
+  const supabaseRef = useRef(createClient());
+  const supabase = supabaseRef.current;
   
   const [peer, setPeer] = useState<UserProfile | null>(null);
   const [chatId, setChatId] = useState<string | null>(null);
@@ -150,7 +151,8 @@ function ChatContent() {
       }
     };
     fetchPeer();
-  }, [peerId, profile?.uid, supabase]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [peerId, profile?.uid]);
 
   // Find or create chat
   useEffect(() => {
@@ -214,7 +216,8 @@ function ChatContent() {
     };
 
     findOrCreateChat();
-  }, [profile, authLoading, peerId, supabase]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile, authLoading, peerId]);
 
   const scrollToBottom = () => {
     setTimeout(() => {
@@ -271,7 +274,8 @@ function ChatContent() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [chatId, peerId, profile?.uid, supabase]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chatId, peerId, profile?.uid]);
 
   const loadOlderMessages = async () => {
     if (!chatId || !oldestCursor || loadingOlder) return;
