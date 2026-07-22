@@ -62,7 +62,7 @@ export default function TrainerDashboard() {
             displayName: d.display_name,
             email: d.email || '',
             photoURL: d.photo_url || '',
-            role: d.role as 'trainer' | 'trainee',
+            role: d.role as 'trainer' | 'trainee' | 'admin',
             focusArea: d.focus_area || '',
             phoneNumber: d.phone_number,
             location: d.location || '',

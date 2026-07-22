@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { User } from '@supabase/supabase-js';
 
-export type UserRole = 'trainer' | 'trainee';
+export type UserRole = 'trainer' | 'trainee' | 'admin';
 
 export interface UserProfile {
   uid: string;

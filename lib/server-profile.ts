@@ -4,7 +4,7 @@ import { buildPhoneLoginEmail, normalizePhoneNumber } from '@/lib/auth/phone-ema
 
 export interface ServerProfile {
   id: string;
-  role: 'trainer' | 'trainee';
+  role: 'trainer' | 'trainee' | 'admin';
   assigned_trainer_id: string | null;
   is_active: boolean;
   email: string | null;

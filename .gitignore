@@ -16,3 +16,11 @@ scratch/
 .agents/
 supabase/.temp/
 
+# Playwright persisted auth sessions (keep the empty fixture committed)
+e2e/.auth/*
+!e2e/.auth/empty.json
+.playwright-mcp/
+dev-server.log
+dev-server.err
+
+.vercel

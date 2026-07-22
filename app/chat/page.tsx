@@ -136,7 +136,7 @@ function ChatContent() {
             displayName: data.display_name,
             email: data.email || '',
             photoURL: data.photo_url || '',
-            role: data.role as 'trainer' | 'trainee',
+            role: data.role as 'trainer' | 'trainee' | 'admin',
             focusArea: data.focus_area || '',
             createdAt: data.created_at,
           });
@@ -175,11 +175,18 @@ function ChatContent() {
 
         if (myChats && myChats.length > 0) {
           const chatIds = myChats.map(c => c.chat_id);
+          // A pair of users may legitimately share multiple chat rows (older
+          // sessions created one chat per visit). The docs for maybeSingle()
+          // require the result to be zero-or-one row, so limit(1) keeps this
+          // from throwing "multiple rows returned" on the existing duplicate
+          // chats. We reuse the first match instead of creating yet another.
           const { data: existingChat, error: existingChatError } = await supabase
             .from('chat_participants')
             .select('chat_id')
             .eq('user_id', peerId)
             .in('chat_id', chatIds)
+            .order('chat_id')
+            .limit(1)
             .maybeSingle();
 
           if (existingChatError) throw existingChatError;
