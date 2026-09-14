@@ -1,48 +1,80 @@
 'use client';
 import Link from 'next/link';
-import { Home, Users, Settings, Plus } from 'lucide-react';
+import { Home, Users, Settings, Plus, MessageSquare, Bell } from 'lucide-react';
 import { usePathname } from 'next/navigation';
+import { cn } from '@/lib/utils';
+
+const LEFT = [
+  { href: '/trainer', icon: Home, label: 'Home' },
+  { href: '/trainer/chats', icon: MessageSquare, label: 'Messages' },
+];
+
+const RIGHT = [
+  { href: '/trainer/trainees', icon: Users, label: 'Trainees' },
+  { href: '/trainer/alerts', icon: Bell, label: 'Alerts' },
+  { href: '/trainer/settings', icon: Settings, label: 'Settings' },
+];
+
+function NavLink({
+  href,
+  label,
+  active,
+  children,
+}: {
+  href: string;
+  label: string;
+  active: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      aria-label={label}
+      aria-current={active ? 'page' : undefined}
+      className={cn(
+        'flex min-w-[52px] flex-col items-center gap-1 rounded-lg px-1 py-1 text-[10px] font-bold transition-colors',
+        active ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+      )}
+    >
+      {children}
+      <span>{label}</span>
+    </Link>
+  );
+}
 
 export function TrainerBottomNav() {
   const pathname = usePathname();
 
-  const navItems = [
-    { href: '/trainer', icon: Home, label: 'Home' },
-    { href: '/trainer/trainees', icon: Users, label: 'Trainees' },
-  ];
-
-  const navItemsRight = [
-    { href: '/trainer/settings', icon: Settings, label: 'Settings' },
-  ];
-
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 z-50 pb-safe">
-      <div className="flex items-center justify-around py-3 px-6 max-w-lg mx-auto">
-        {navItems.map((item) => {
-          const isActive = pathname === item.href;
+    <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card pb-safe">
+      <div className="mx-auto flex max-w-lg items-end justify-around px-3 py-2">
+        {LEFT.map((item) => {
           const Icon = item.icon;
+          const active = pathname === item.href;
           return (
-            <Link key={item.href} href={item.href} className={`flex flex-col items-center gap-1.5 transition-colors ${isActive ? 'text-primary' : 'text-slate-400 hover:text-primary'}`}>
-              <Icon className="w-6 h-6" />
-              <span className="text-[10px] font-bold">{item.label}</span>
-            </Link>
+            <NavLink key={item.href} href={item.href} label={item.label} active={active}>
+              <Icon className="size-5" />
+            </NavLink>
           );
         })}
-        
-        <div className="relative -top-6">
-          <Link href="/trainer/trainees" className="flex size-14 items-center justify-center bg-primary text-primary-dark rounded-full shadow-[0_8px_16px_-4px_rgba(141,235,113,0.5)] border-4 border-white transition-transform active:scale-95">
-            <Plus className="w-7 h-7 stroke-[3]" />
+
+        <div className="relative -top-5">
+          <Link
+            href="/trainer/trainees"
+            aria-label="Add trainee"
+            className="flex size-14 items-center justify-center rounded-full border-4 border-background bg-primary text-primary-foreground shadow-[0_8px_16px_-6px_var(--primary)] transition-transform active:scale-95"
+          >
+            <Plus className="size-6" strokeWidth={3} />
           </Link>
         </div>
 
-        {navItemsRight.map((item) => {
-          const isActive = pathname === item.href;
+        {RIGHT.map((item) => {
           const Icon = item.icon;
+          const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
           return (
-            <Link key={item.href} href={item.href} className={`flex flex-col items-center gap-1.5 transition-colors ${isActive ? 'text-primary' : 'text-slate-400 hover:text-primary'}`}>
-              <Icon className="w-6 h-6" />
-              <span className="text-[10px] font-bold">{item.label}</span>
-            </Link>
+            <NavLink key={item.href} href={item.href} label={item.label} active={active}>
+              <Icon className="size-5" />
+            </NavLink>
           );
         })}
       </div>

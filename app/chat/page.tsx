@@ -4,16 +4,22 @@ import { useEffect, useState, useRef, Suspense } from 'react';
 import { useAuthStore, UserProfile } from '@/lib/store';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Phone, MoreVertical, Image as ImageIcon, Send, Camera, Mic, Square, Trash2, Video } from 'lucide-react';
-import Image from 'next/image';
+import { ArrowLeft, Phone, MoreVertical, Image as ImageIcon, Send, Camera, Mic, Square, Trash2, Video, TriangleAlert } from 'lucide-react';
 import { format } from 'date-fns';
 import { resolveApiUrl } from '@/lib/api-helper';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Empty, EmptyTitle, EmptyDescription } from '@/components/ui/empty';
+import { Spinner } from '@/components/ui/spinner';
+import { cn } from '@/lib/utils';
 
 interface Message {
   id: string;
   sender_id: string;
   text?: string;
-  // Either a base64 data URI (legacy) or an R2 object key ("chat/images/...")  
+  // Either a base64 data URI (legacy) or an R2 object key ("chat/images/...")
   image_url?: string | null;
   // Either a base64 data URI (legacy) or an R2 object key ("chat/audio/...")
   audio_url?: string | null;
@@ -36,7 +42,32 @@ function mediaSrc(value: string | null | undefined, apiPrefix: string): string |
   return resolveApiUrl(`${apiPrefix}/${value.replace(/^chat\//, '')}`);
 }
 
-
+function MessageSkeletons() {
+  return (
+    <div className="flex flex-col gap-4" role="status" aria-label="Loading messages">
+      <div className="flex items-end gap-2">
+        <Skeleton className="size-8 shrink-0 rounded-full" />
+        <div className="space-y-1.5">
+          <Skeleton className="h-12 w-48 rounded-xl rounded-bl-sm" />
+          <Skeleton className="h-3 w-16" />
+        </div>
+      </div>
+      <div className="flex items-end justify-end gap-2">
+        <div className="flex flex-col items-end gap-1.5">
+          <Skeleton className="h-12 w-56 rounded-xl rounded-br-sm" />
+          <Skeleton className="h-3 w-16" />
+        </div>
+      </div>
+      <div className="flex items-end gap-2">
+        <Skeleton className="size-8 shrink-0 rounded-full" />
+        <div className="space-y-1.5">
+          <Skeleton className="h-16 w-40 rounded-xl rounded-bl-sm" />
+          <Skeleton className="h-3 w-16" />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function ChatContent() {
   const { profile, loading: authLoading } = useAuthStore();
@@ -45,7 +76,7 @@ function ChatContent() {
   const peerId = searchParams.get('peerId') as string;
   const supabaseRef = useRef(createClient());
   const supabase = supabaseRef.current;
-  
+
   const [peer, setPeer] = useState<UserProfile | null>(null);
   const [chatId, setChatId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -63,7 +94,7 @@ function ChatContent() {
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [isSending, setIsSending] = useState(false);
-  
+
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -127,9 +158,9 @@ function ChatContent() {
           .select('*')
           .eq('id', peerId)
           .single();
-        
+
         if (peerError) throw peerError;
-        
+
         if (data) {
           setPeer({
             uid: data.id,
@@ -212,7 +243,7 @@ function ChatContent() {
             { chat_id: newChat.id, user_id: peerId }
           ]);
           if (participantsError) throw participantsError;
-          
+
           setChatId(newChat.id);
         }
       } catch (err: any) {
@@ -245,7 +276,7 @@ function ChatContent() {
           .eq('chat_id', chatId)
           .order('created_at', { ascending: false })
           .limit(PAGE_SIZE);
-        
+
         if (msgError) throw msgError;
 
         if (data) {
@@ -267,11 +298,11 @@ function ChatContent() {
 
     // Subscribe to new messages
     const channel = supabase.channel(`chat:${chatId}`)
-      .on('postgres_changes', { 
-        event: 'INSERT', 
-        schema: 'public', 
-        table: 'messages', 
-        filter: `chat_id=eq.${chatId}` 
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages',
+        filter: `chat_id=eq.${chatId}`
       }, (payload) => {
         setMessages(prev => [...prev, payload.new as Message]);
         scrollToBottom();
@@ -376,221 +407,273 @@ function ChatContent() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-6 text-center">
-        <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-4">
-          <Trash2 className="w-8 h-8" />
+      <div className="flex min-h-svh flex-col bg-background font-sans">
+        <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-center justify-center p-6">
+          <Empty>
+            <span className="flex size-14 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+              <TriangleAlert className="size-7" />
+            </span>
+            <EmptyTitle>Something went wrong</EmptyTitle>
+            <EmptyDescription>{error}</EmptyDescription>
+            <Button variant="outline" size="sm" onClick={() => router.back()} className="mt-2">
+              <ArrowLeft className="size-4" />
+              Go Back
+            </Button>
+          </Empty>
         </div>
-        <h2 className="text-lg font-bold text-slate-900 mb-2">Something went wrong</h2>
-        <p className="text-slate-600 mb-6 max-w-sm">{error}</p>
-        <button
-          onClick={() => router.back()}
-          className="px-6 py-2.5 bg-primary text-primary-dark font-semibold rounded-xl hover:bg-[#7ED465] transition-all"
-        >
-          Go Back
-        </button>
       </div>
     );
   }
 
-  if (!profile || loading || !peer) {
-    return <div className="min-h-screen flex items-center justify-center bg-background-light dark:bg-background-dark"><div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div></div>;
-  }
+  // Shell-first: header renders instantly with shimmer fallback for the peer,
+  // message list shows skeleton bubbles until the first page arrives.
+  const peerInitials = (peer?.displayName || '??').substring(0, 2).toUpperCase();
 
   return (
-    <div className="flex flex-col h-[100dvh] max-w-2xl mx-auto bg-background-light font-sans text-slate-900 border-x border-slate-100">
-      {/* Top Navigation Bar */}
-      <header className="flex items-center justify-between px-4 py-4 bg-white border-b border-slate-100 sticky top-0 z-10 shadow-sm">
-        <div className="flex items-center gap-4">
-          <button onClick={() => router.back()} className="p-2 -ml-2 text-slate-500 hover:text-slate-900 hover:bg-slate-50 rounded-full transition-colors">
-            <ArrowLeft className="w-6 h-6" />
-          </button>
-          
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden border border-slate-200 relative shrink-0">
-              {peer.photoURL ? (
-                <Image src={peer.photoURL} alt={peer.displayName} fill className="object-cover rounded-full" referrerPolicy="no-referrer" />
-              ) : (
-                <span className="text-slate-500 font-bold uppercase text-sm">{peer.displayName.substring(0, 2)}</span>
-              )}
+    <div className="mx-auto flex h-svh w-full max-w-2xl flex-col border-x border-border bg-background font-sans text-foreground">
+      <header className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card px-3 py-2.5">
+        <div className="flex min-w-0 items-center gap-2">
+          <Button variant="ghost" size="icon-sm" aria-label="Go back" onClick={() => router.back()}>
+            <ArrowLeft className="size-5" />
+          </Button>
+          {loading || !peer ? (
+            <div className="flex items-center gap-3" role="status" aria-label="Loading conversation">
+              <Skeleton className="size-10 rounded-full" />
+              <div className="space-y-1.5">
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="h-3 w-20" />
+              </div>
             </div>
-            <div className="flex flex-col">
-              <h1 className="font-bold text-base leading-tight text-slate-900">{peer.displayName}</h1>
-              <span className="text-[11px] font-bold uppercase tracking-wider text-primary-dark opacity-80 mt-0.5">
-                {peer.focusArea || (peer.role === 'trainer' ? 'Trainer' : 'Trainee')}
-              </span>
+          ) : (
+            <div className="flex min-w-0 items-center gap-3">
+              <Avatar className="size-10">
+                {peer.photoURL ? (
+                  <AvatarImage src={peer.photoURL} alt={peer.displayName} />
+                ) : (
+                  <AvatarFallback>{peerInitials}</AvatarFallback>
+                )}
+              </Avatar>
+              <div className="flex min-w-0 flex-col">
+                <h1 className="truncate font-heading text-[15px] font-bold leading-tight">{peer.displayName}</h1>
+                <Badge variant="secondary" size="sm" className="mt-0.5 self-start uppercase">
+                  {peer.focusArea || (peer.role === 'trainer' ? 'Trainer' : 'Trainee')}
+                </Badge>
+              </div>
             </div>
-          </div>
+          )}
         </div>
-        
-        <div className="flex items-center gap-1">
-          <button className="p-2.5 hover:bg-slate-50 rounded-full transition-colors text-slate-500 hover:text-primary-dark">
-            <Phone className="w-5 h-5" />
-          </button>
-          <button className="p-2.5 hover:bg-slate-50 rounded-full transition-colors text-slate-500 hover:text-primary-dark">
-            <MoreVertical className="w-5 h-5" />
-          </button>
+
+        <div className="flex shrink-0 items-center">
+          <Button variant="ghost" size="icon-sm" aria-label="Call">
+            <Phone className="size-5" />
+          </Button>
+          <Button variant="ghost" size="icon-sm" aria-label="More options">
+            <MoreVertical className="size-5" />
+          </Button>
         </div>
       </header>
 
-      {/* Chat Area */}
-      <main className="flex-1 overflow-y-auto p-4 space-y-6 bg-slate-50/50">
-        {/* Load older messages */}
-        {hasOlderMessages && (
-          <div className="flex justify-center">
-            <button
-              onClick={loadOlderMessages}
-              disabled={loadingOlder}
-              className="px-4 py-2 text-xs font-bold text-slate-500 bg-white border border-slate-200 rounded-full shadow-sm hover:border-primary hover:text-primary-dark transition-all disabled:opacity-50"
-            >
-              {loadingOlder ? 'Loading...' : 'Load older messages'}
-            </button>
+      <main className="flex-1 overflow-y-auto bg-muted/40 p-4" aria-busy={loading} aria-label="Messages">
+        {loading ? (
+          <MessageSkeletons />
+        ) : (
+          <div className="flex flex-col gap-4">
+            {hasOlderMessages && (
+              <div className="flex justify-center">
+                <Button variant="outline" size="sm" onClick={loadOlderMessages} loading={loadingOlder}>
+                  Load older messages
+                </Button>
+              </div>
+            )}
+
+            <div className="flex justify-center">
+              <Badge variant="secondary" size="sm" className="uppercase tracking-widest">
+                Today
+              </Badge>
+            </div>
+
+            {messages.map((msg, idx) => {
+              const isMe = profile ? msg.sender_id === profile.uid : false;
+              const timeString = msg.created_at ? format(new Date(msg.created_at), 'hh:mm a') : 'Sending...';
+
+              return (
+                <div key={msg.id || idx} className={cn('flex max-w-[85%] items-end gap-2', isMe && 'ml-auto flex-row-reverse')}>
+                  {!isMe && (
+                    <Avatar className="size-8 shrink-0">
+                      {peer?.photoURL ? (
+                        <AvatarImage src={peer.photoURL} alt={peer.displayName} />
+                      ) : (
+                        <AvatarFallback className="text-[10px]">{peerInitials}</AvatarFallback>
+                      )}
+                    </Avatar>
+                  )}
+
+                  <div className={cn('flex min-w-0 flex-col gap-1.5', isMe && 'items-end')}>
+                    {(msg.text || msg.inquiry_id) && (
+                      <div
+                        className={cn(
+                          'px-3.5 py-2.5 text-[15px] leading-relaxed shadow-[0_1px_0_0_var(--border)]',
+                          isMe
+                            ? 'rounded-xl rounded-br-sm bg-primary font-medium text-primary-foreground'
+                            : 'rounded-xl rounded-bl-sm border border-border bg-card font-medium text-card-foreground'
+                        )}
+                      >
+                        {msg.inquiry_id && (
+                          <p className="mb-1 text-[10px] font-bold uppercase tracking-widest opacity-70">
+                            {msg.inquiry_urgency === 'High' ? 'High urgency inquiry' : 'Trainee inquiry'}
+                          </p>
+                        )}
+                        {msg.text && <p>{msg.text}</p>}
+                      </div>
+                    )}
+
+                    {msg.image_url && (() => {
+                      const src = mediaSrc(msg.image_url, '/api/chat-media');
+                      return src ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={src}
+                          alt="Attached media"
+                          loading="lazy"
+                          referrerPolicy="no-referrer"
+                          className={cn(
+                            'h-auto w-full max-w-[240px] rounded-xl border object-cover shadow-[0_1px_0_0_var(--border)]',
+                            isMe ? 'border-primary/30' : 'border-border'
+                          )}
+                        />
+                      ) : null;
+                    })()}
+
+                    {msg.audio_url && (() => {
+                      const src = mediaSrc(msg.audio_url, '/api/chat-media');
+                      return src ? (
+                        <div
+                          className={cn(
+                            'w-full max-w-[240px] rounded-xl border p-2 shadow-[0_1px_0_0_var(--border)]',
+                            isMe ? 'border-primary/30 bg-primary/5' : 'border-border bg-card'
+                          )}
+                        >
+                          <audio src={src} controls preload="none" className="h-10 w-full" />
+                        </div>
+                      ) : null;
+                    })()}
+
+                    {msg.inquiry_id && msg.video_object_key && msg.video_status !== 'expired' && (
+                      <div className="w-full max-w-[320px] rounded-xl border border-border bg-card p-2.5 shadow-[0_1px_0_0_var(--border)]">
+                        <p className="mb-2 inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+                          <Video className="size-4" />
+                          Inquiry video
+                        </p>
+                        <video
+                          key={msg.id}
+                          controls
+                          preload="none"
+                          className="w-full rounded-lg bg-black"
+                          src={resolveApiUrl(`/api/inquiries/${msg.inquiry_id}/video`)}
+                        />
+                      </div>
+                    )}
+
+                    <span className="text-[11px] font-medium text-muted-foreground">
+                      {timeString} {isMe && '• Sent'}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+
+            <div ref={messagesEndRef} className="h-1" />
           </div>
         )}
-
-        {/* Date Divider */}
-        <div className="flex justify-center my-2">
-          <span className="px-4 py-1.5 bg-white border border-slate-100 rounded-full text-[10px] font-bold text-slate-400 uppercase tracking-widest shadow-sm">
-            Today
-          </span>
-        </div>
-
-        {messages.map((msg, idx) => {
-          const isMe = msg.sender_id === profile.uid;
-          const timeString = msg.created_at ? format(new Date(msg.created_at), 'hh:mm a') : 'Sending...';
-
-          return (
-            <div key={msg.id || idx} className={`flex items-end gap-2.5 max-w-[85%] ${isMe ? 'ml-auto flex-row-reverse' : ''}`}>
-              {!isMe && (
-                <div className="w-8 h-8 rounded-full bg-slate-200 shrink-0 overflow-hidden mb-1.5 relative shadow-sm border border-slate-100">
-                  {peer.photoURL ? (
-                    <Image src={peer.photoURL} alt={peer.displayName} fill className="object-cover rounded-full" referrerPolicy="no-referrer" />
-                  ) : (
-                    <span className="text-slate-500 font-bold uppercase text-xs flex items-center justify-center h-full w-full">{peer.displayName.substring(0, 2)}</span>
-                  )}
-                </div>
-              )}
-              
-              <div className={`flex flex-col gap-1.5 ${isMe ? 'items-end' : ''}`}>
-                <div className={`px-4 py-3 shadow-sm ${
-                  isMe 
-                    ? 'bg-primary text-primary-dark font-medium rounded-2xl rounded-br-sm' 
-                    : 'bg-white text-slate-700 font-medium rounded-2xl rounded-bl-sm border border-slate-100'
-                }`}>
-                  {msg.inquiry_id && (
-                    <p className="mb-2 text-[10px] font-bold uppercase tracking-widest opacity-70">
-                      {msg.inquiry_urgency === 'High' ? 'High urgency inquiry' : 'Trainee inquiry'}
-                    </p>
-                  )}
-                  {msg.text && <p className="text-[15px] leading-relaxed">{msg.text}</p>}
-                </div>
-                
-                {msg.image_url && (() => {
-                  const src = mediaSrc(msg.image_url, '/api/chat-media');
-                  return src ? (
-                    <div className={`w-full max-w-[240px] rounded-2xl overflow-hidden shadow-sm border-2 ${isMe ? 'border-primary' : 'border-slate-100 bg-white p-1'}`}>
-                      <Image src={src} alt="Attached media" width={240} height={240} loading="lazy" className="w-full h-auto rounded-xl" referrerPolicy="no-referrer" />
-                    </div>
-                  ) : null;
-                })()}
-
-                {msg.audio_url && (() => {
-                  const src = mediaSrc(msg.audio_url, '/api/chat-media');
-                  return src ? (
-                    <div className={`w-full max-w-[240px] rounded-2xl shadow-sm border ${isMe ? 'bg-[#E5F5E5] border-primary/20' : 'bg-white border-slate-100'} p-2.5`}>
-                      <audio src={src} controls preload="none" className="w-full h-10" />
-                    </div>
-                  ) : null;
-                })()}
-
-                {msg.inquiry_id && msg.video_object_key && msg.video_status !== 'expired' && (
-                  <div className={`w-full max-w-[320px] rounded-2xl shadow-sm border ${isMe ? 'bg-[#E5F5E5] border-primary/20' : 'bg-white border-slate-100'} p-2.5`}>
-                    <div className="mb-2 inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-wide text-slate-500">
-                      <Video className="h-4 w-4" />
-                      <span>Inquiry video</span>
-                    </div>
-                    <video
-                      key={msg.id}
-                      controls
-                      preload="none"
-                      className="w-full rounded-xl bg-black"
-                      src={resolveApiUrl(`/api/inquiries/${msg.inquiry_id}/video`)}
-                    />
-                  </div>
-                )}
-                
-                <span className={`text-[10px] font-medium text-slate-400 mt-0.5 ${isMe ? 'mr-1' : 'ml-1'}`}>
-                  {timeString} {isMe && '• Sent'}
-                </span>
-              </div>
-            </div>
-          );
-        })}
-        
-        <div ref={messagesEndRef} className="h-2" />
       </main>
 
-      {/* Bottom Input Bar */}
-      <footer className="p-4 bg-white border-t border-slate-100 flex flex-col gap-3 pb-safe z-10 shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.02)]">
-        {/* Previews */}
+      <footer className="border-t border-border bg-card p-3 pb-safe">
         {(imagePreview || audioUrl) && (
-          <div className="flex flex-col gap-2 mb-1">
+          <div className="mb-2 flex flex-col gap-2">
             {imagePreview && (
-              <div className="relative w-24 h-24 rounded-2xl overflow-hidden border-2 border-slate-100 shadow-sm">
-                <Image src={imagePreview} alt="Preview" width={96} height={96} className="w-full h-full object-cover" />
-                <button type="button" onClick={() => {
-                  setImageFile(null);
-                  setImagePreview((prev) => { if (prev) URL.revokeObjectURL(prev); return null; });
-                }} className="absolute top-1.5 right-1.5 p-1.5 bg-black/60 backdrop-blur-sm text-white rounded-full hover:bg-black/80 transition-colors">
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
+              <div className="relative w-24 overflow-hidden rounded-xl border border-border">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={imagePreview} alt="Preview" className="size-24 object-cover" />
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="icon-xs"
+                  aria-label="Remove image"
+                  className="absolute right-1.5 top-1.5"
+                  onClick={() => {
+                    setImageFile(null);
+                    setImagePreview((prev) => { if (prev) URL.revokeObjectURL(prev); return null; });
+                  }}
+                >
+                  <Trash2 className="size-3.5" />
+                </Button>
               </div>
             )}
             {audioUrl && (
-              <div className="flex items-center gap-2 bg-slate-50 p-2.5 rounded-2xl border border-slate-100 shadow-sm inline-flex max-w-[260px]">
-                <audio src={audioUrl} controls className="h-10 flex-1 min-w-0" />
-                <button type="button" onClick={() => { setAudioUrl(null); setAudioBlob(null); }} className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors shrink-0">
-                  <Trash2 className="w-4 h-4" />
-                </button>
+              <div className="flex max-w-[280px] items-center gap-2 rounded-xl border border-border bg-muted p-2">
+                <audio src={audioUrl} controls className="h-10 min-w-0 flex-1" />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label="Remove audio"
+                  className="shrink-0 text-destructive"
+                  onClick={() => { setAudioUrl(null); setAudioBlob(null); }}
+                >
+                  <Trash2 className="size-4" />
+                </Button>
               </div>
             )}
           </div>
         )}
 
-        <form onSubmit={sendMessage} className="flex items-end gap-2 max-w-full">
-          <div className="flex gap-0.5 pb-1 shrink-0">
-            <input type="file" accept="image/*" capture="environment" ref={cameraInputRef} onChange={handleImageUpload} className="hidden" />
-            <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageUpload} className="hidden" />
-            
-            <button type="button" onClick={() => cameraInputRef.current?.click()} className="p-2.5 text-slate-400 hover:text-primary-dark hover:bg-slate-50 rounded-full transition-all active:scale-95">
-              <Camera className="w-6 h-6" />
-            </button>
-            <button type="button" onClick={() => fileInputRef.current?.click()} className="p-2.5 text-slate-400 hover:text-primary-dark hover:bg-slate-50 rounded-full transition-all active:scale-95">
-              <ImageIcon className="w-6 h-6" />
-            </button>
-            <button type="button" onClick={isRecording ? stopRecording : startRecording} className={`p-2.5 rounded-full transition-all active:scale-95 ${isRecording ? 'text-red-500 bg-red-50' : 'text-slate-400 hover:text-primary-dark hover:bg-slate-50'}`}>
-              {isRecording ? <Square className="w-6 h-6 fill-current" /> : <Mic className="w-6 h-6" />}
-            </button>
-          </div>
-          
-          <div className="flex-1 min-w-0 relative bg-slate-50 rounded-3xl border border-slate-100 shadow-sm flex items-center pr-1 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary/40 transition-all">
-            <textarea 
-              className="w-full py-3.5 px-4 bg-transparent border-none text-[15px] font-medium text-slate-900 placeholder:text-slate-400 placeholder:font-normal focus:outline-none resize-none max-h-32 min-h-[50px]" 
-              placeholder="Message..." 
+        <form onSubmit={sendMessage} className="flex items-end gap-1.5">
+          <input type="file" accept="image/*" capture="environment" ref={cameraInputRef} onChange={handleImageUpload} className="hidden" />
+          <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageUpload} className="hidden" />
+
+          <Button type="button" variant="ghost" size="icon" aria-label="Take photo" onClick={() => cameraInputRef.current?.click()}>
+            <Camera className="size-5" />
+          </Button>
+          <Button type="button" variant="ghost" size="icon" aria-label="Attach image" onClick={() => fileInputRef.current?.click()}>
+            <ImageIcon className="size-5" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label={isRecording ? 'Stop recording' : 'Record voice message'}
+            aria-pressed={isRecording}
+            className={isRecording ? 'text-destructive' : undefined}
+            onClick={isRecording ? stopRecording : startRecording}
+          >
+            {isRecording ? <Square className="size-5 fill-current" /> : <Mic className="size-5" />}
+          </Button>
+
+          <div className="flex min-w-0 flex-1 items-center gap-1 rounded-xl border border-input bg-background py-1 pl-3 pr-1 transition-colors focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20">
+            <label htmlFor="chat-input" className="sr-only">Message</label>
+            <textarea
+              id="chat-input"
+              aria-label="Message..."
+              className="max-h-28 min-h-[38px] w-full resize-none bg-transparent py-2 text-[15px] font-medium text-foreground outline-none placeholder:font-normal placeholder:text-muted-foreground"
+              placeholder="Message..."
               rows={1}
               value={newMessage}
               onChange={(e) => {
                 setNewMessage(e.target.value);
                 e.target.style.height = 'auto';
-                e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+                e.target.style.height = Math.min(e.target.scrollHeight, 112) + 'px';
               }}
             />
-            <button 
+            <Button
               type="submit"
-              disabled={(!newMessage.trim() && !imageFile && !audioBlob)}
-              className="p-2.5 bg-primary text-primary-dark rounded-full hover:bg-[#7ED465] transition-all active:scale-90 shadow-sm disabled:opacity-50 disabled:active:scale-100 shrink-0 ml-1.5 mb-1"
+              size="icon"
+              aria-label="Send message"
+              loading={isSending}
+              disabled={!newMessage.trim() && !imageFile && !audioBlob}
+              className="shrink-0 rounded-lg"
             >
-              <Send className="w-5 h-5 -ml-0.5" />
-            </button>
+              <Send className="size-4" />
+            </Button>
           </div>
         </form>
       </footer>
@@ -600,8 +683,28 @@ function ChatContent() {
 
 export default function ChatInterface() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background-light dark:bg-background-dark"><div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div></div>}>
-      <ChatContent />
-    </Suspense>
+    <div className="min-h-svh bg-background">
+      <Suspense
+        fallback={
+          <div className="mx-auto flex h-svh w-full max-w-2xl flex-col border-x border-border bg-background">
+            <div className="flex items-center gap-3 border-b border-border bg-card px-4 py-3" role="status" aria-label="Loading conversation">
+              <Skeleton className="size-10 rounded-full" />
+              <div className="space-y-1.5">
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="h-3 w-20" />
+              </div>
+            </div>
+            <div className="flex-1 p-4">
+              <MessageSkeletons />
+            </div>
+            <div className="flex items-center justify-center border-t border-border bg-card p-4">
+              <Spinner className="size-5 text-muted-foreground" />
+            </div>
+          </div>
+        }
+      >
+        <ChatContent />
+      </Suspense>
+    </div>
   );
 }

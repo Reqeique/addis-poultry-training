@@ -4,18 +4,23 @@ import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/store';
 import { useRouter } from 'next/navigation';
-import { Loader2, Lock, Phone } from 'lucide-react';
+import { Lock, Phone } from 'lucide-react';
 
 import { buildPhoneLoginEmail, normalizePhoneNumber } from '@/lib/auth/phone-email';
 import { Logo } from '@/components/Logo';
-
+import { Button } from '@/components/ui/button';
+import { Card, CardPanel, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Field, FieldLabel } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Spinner } from '@/components/ui/spinner';
 
 export default function LoginPage() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { loading: authLoading, setProfile } = useAuthStore();
+  const { loading: authLoading } = useAuthStore();
   const router = useRouter();
   const supabase = createClient();
 
@@ -23,7 +28,6 @@ export default function LoginPage() {
     try {
       setLoading(true);
       setError('');
-      // Seed first
       await fetch('/api/admin/seed-auth').catch(() => null);
 
       const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -32,6 +36,7 @@ export default function LoginPage() {
       });
 
       if (signInError) throw signInError;
+      router.push('/trainer');
     } catch (err: any) {
       setError(err.message || 'Could not sign in as trainer.');
     } finally {
@@ -43,7 +48,6 @@ export default function LoginPage() {
     try {
       setLoading(true);
       setError('');
-      // Seed first
       await fetch('/api/admin/seed-auth').catch(() => null);
 
       const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -52,6 +56,7 @@ export default function LoginPage() {
       });
 
       if (signInError) throw signInError;
+      router.push('/trainee');
     } catch (err: any) {
       setError(err.message || 'Could not sign in as trainee.');
     } finally {
@@ -83,80 +88,97 @@ export default function LoginPage() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background-light dark:bg-background-dark">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="flex min-h-svh items-center justify-center bg-background">
+        <Spinner className="size-8 text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-[100dvh] w-full flex-col bg-background-light font-sans text-slate-900 antialiased p-6 outline-none">
-      
-      <div className="flex justify-center w-full max-w-[320px] mx-auto mt-12 mb-8">
-        <Logo className="w-24 h-24" />
-      </div>
-
-      <div className="flex flex-col items-center text-center mb-10">
-        <p className="text-slate-600 font-medium text-lg flex items-center gap-2 mb-2">
-          Hey 👋 there
-        </p>
-        <h1 className="text-4xl font-bold tracking-tight text-primary-dark">
-          Welcome to <br /> Addis Poultry
-        </h1>
-      </div>
-
-      <div className="flex flex-col w-full max-w-[400px] mx-auto gap-4 mb-auto">
-        {error && (
-          <div className="p-3 bg-red-100 text-red-700 rounded-2xl text-sm text-center font-medium">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSignIn} className="flex flex-col gap-3">
-          <div className="relative">
-            <Phone className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-            <input
-              className="flex w-full rounded-full text-slate-900 border-2 border-slate-100 bg-white focus:ring-4 focus:ring-primary/10 focus:border-primary focus:outline-none h-14 pl-12 pr-5 placeholder:text-slate-400 text-[15px] font-medium transition-all shadow-sm"
-              placeholder="Phone number (e.g. +251...)"
-              type="tel"
-              value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
-              required
-            />
-          </div>
-          <div className="relative">
-            <Lock className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-            <input
-              className="flex w-full rounded-full text-slate-900 border-2 border-slate-100 bg-white focus:ring-4 focus:ring-primary/10 focus:border-primary focus:outline-none h-14 pl-12 pr-5 placeholder:text-slate-400 text-[15px] font-medium transition-all shadow-sm"
-              placeholder="Password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={loading || !phoneNumber || !password}
-            className="w-full h-14 mt-2 bg-primary hover:bg-[#7ED465] text-primary-dark font-bold rounded-full transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-70 disabled:active:scale-100 text-base shadow-[0_8px_20px_-4px_rgba(141,235,113,0.4)]"
-          >
-            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
-              <span>Sign In</span>
-            )}
-          </button>
-        </form>
-
-        {/* Bypass section */}
-        <div className="flex gap-2 mt-4 justify-center">
-            <span onClick={handleBypassTrainer} className="text-xs text-slate-400 hover:text-primary-dark cursor-pointer font-bold transition-colors">Try Trainer</span>
-            <span className="text-xs text-slate-300">•</span>
-            <span onClick={handleBypassTrainee} className="text-xs text-slate-400 hover:text-primary-dark cursor-pointer font-bold transition-colors">Try Trainee</span>
+    <div className="flex min-h-svh w-full flex-col bg-background font-sans text-foreground">
+      <main className="mx-auto flex w-full max-w-md flex-1 flex-col px-6 py-10">
+        <div className="mx-auto mb-6 mt-8">
+          <Logo className="size-20" />
         </div>
 
-        <p className="text-center text-xs text-slate-400 mt-6 px-4 font-medium leading-relaxed pb-6">
-          By continuing you agreeing to <br/><span className="font-bold text-slate-600">Terms of Use</span> and <span className="font-bold text-slate-600">Privacy Policy</span>
+        <div className="mb-6 text-center">
+          <p className="mb-1 text-sm font-semibold text-muted-foreground">Hey 👋 there</p>
+          <h1 className="font-heading text-3xl font-bold tracking-tight">
+            Welcome to <span className="text-primary">Addis Poultry</span>
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Sign in with your phone number to reach your trainer.
+          </p>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Sign in</CardTitle>
+            <CardDescription>Use the phone number your trainer registered for you.</CardDescription>
+          </CardHeader>
+          <CardPanel className="flex flex-col gap-4">
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
+            <form onSubmit={handleSignIn} className="flex flex-col gap-3">
+              <Field>
+                <FieldLabel htmlFor="phone">Phone number</FieldLabel>
+                <span className="relative block">
+                  <Phone className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="phone"
+                    className="pl-9"
+                    placeholder="Phone number (e.g. +251...)"
+                    aria-label="Phone number (e.g. +251...)"
+                    type="tel"
+                    autoComplete="tel"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    required
+                  />
+                </span>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="password">Password</FieldLabel>
+                <span className="relative block">
+                  <Lock className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    className="pl-9"
+                    placeholder="Password"
+                    type="password"
+                    autoComplete="current-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                </span>
+              </Field>
+              <Button type="submit" size="lg" loading={loading} disabled={!phoneNumber || !password} className="mt-1 w-full">
+                Sign In
+              </Button>
+            </form>
+
+            <div className="flex items-center justify-center gap-2 text-xs font-semibold">
+              <button type="button" onClick={handleBypassTrainer} className="text-muted-foreground hover:text-primary">
+                Try Trainer
+              </button>
+              <span className="text-border">•</span>
+              <button type="button" onClick={handleBypassTrainee} className="text-muted-foreground hover:text-primary">
+                Try Trainee
+              </button>
+            </div>
+          </CardPanel>
+        </Card>
+
+        <p className="mt-6 px-4 text-center text-xs leading-relaxed text-muted-foreground">
+          By continuing you agree to <span className="font-bold text-foreground">Terms of Use</span> and{' '}
+          <span className="font-bold text-foreground">Privacy Policy</span>
         </p>
-      </div>
+      </main>
     </div>
   );
 }

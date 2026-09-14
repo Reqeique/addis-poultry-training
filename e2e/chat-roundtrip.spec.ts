@@ -10,8 +10,6 @@ import { waitForTrainerDashboard, settle, APP_URL } from './helpers'
 
 const TRAINER_PHONE = '+251911223344'
 const TRAINEE_PHONE = '+251922334455'
-const TRAINER_ID = '4368a1da-d33e-446c-ad06-608696f83103'
-const TRAINEE_ID = '47db5480-cf0c-4389-a0ce-e73b158b7fdf'
 
 async function openPeerChat(page: Page, peerId: string, peerHeading: string) {
   await page.goto(`${APP_URL}/chat?peerId=${peerId}`, { waitUntil: 'load' })
@@ -63,7 +61,7 @@ test.describe('Chat round-trip (trainer ↔ trainee live', () => {
     // =========================================================
     // STEP 1. Trainer opens the assigned trainee's chat.
     // =========================================================
-    await openPeerChat(trainerPage, trainee!.id, 'Abebe Kebede')
+    await openPeerChat(trainerPage, trainee!.id, trainee!.display_name)
 
     // Sanity DB: the chat we're viewing matches DB state.
     const pairChatId = await findPairChat(trainer!.id, trainee!.id)
@@ -87,7 +85,7 @@ test.describe('Chat round-trip (trainer ↔ trainee live', () => {
     //         the trainer just sent. (Polling-less: physical
     //         navigation forces data fetch — pure DB read.)
     // =========================================================
-    await openPeerChat(traineePage, TRAINER_ID, 'Admin Trainer')
+    await openPeerChat(traineePage, trainer!.id, trainer!.display_name)
     await expectMessageVisible(traineePage, txMarker)
 
     // The DB view from the trainee side must also agree.
@@ -118,7 +116,7 @@ test.describe('Chat round-trip (trainer ↔ trainee live', () => {
     //         reply is now visible (and the trainer outgoing
     //         from STEP 1 still is).
     // =========================================================
-    await openPeerChat(trainerPage, trainee!.id, 'Abebe Kebede')
+    await openPeerChat(trainerPage, trainee!.id, trainee!.display_name)
     await expectMessageVisible(trainerPage, rxMarker)
     await expectMessageVisible(trainerPage, txMarker)
 

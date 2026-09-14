@@ -10,6 +10,14 @@ import { processVideoForUpload } from '@/lib/media/video';
 import { LogOut, Send, CheckCircle2, Globe, Camera, Image as ImageIcon, Mic, Square, Trash2, Video, AlertTriangle, Clock } from 'lucide-react';
 import { resolveApiUrl } from '@/lib/api-helper';
 import { differenceInDays, format } from 'date-fns';
+import { Button } from '@/components/ui/button';
+import { Card, CardPanel } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 
 const CATEGORIES = ['Marketing', 'Health', 'Housing', 'Feeding', 'General'];
 
@@ -577,61 +585,65 @@ export default function TraineeDashboard() {
     }
   };
 
-  if (loading) {
-    return <div className="min-h-screen flex items-center justify-center bg-background-light dark:bg-background-dark"><div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div></div>;
-  }
+  // Shell-first: no full-page gate — header + nav render instantly while
+  // the inquiry form area shimmers until auth resolves.
 
   return (
-    <div className="flex min-h-screen w-full flex-col overflow-x-hidden bg-background-light font-sans text-slate-900 pb-24">
-      {/* Top App Bar */}
-      <header className="flex items-center px-6 pt-12 pb-4 justify-between bg-background-light sticky top-0 z-10">
-        <div className="flex items-center gap-4">
-          <div className="relative size-12 rounded-full overflow-hidden bg-primary/20 border border-slate-200">
-            {profile?.photoURL ? (
-              <Image src={profile.photoURL} alt="Trainee" fill className="object-cover rounded-full" unoptimized referrerPolicy="no-referrer" />
-            ) : (
-              <div className="flex w-full h-full items-center justify-center text-primary-dark font-bold">
-                {profile?.displayName?.trim() ? profile.displayName.substring(0,2).toUpperCase() : 'TR'}
-              </div>
-            )}
+    <div className="flex min-h-svh w-full flex-col bg-background font-sans text-foreground pb-24">
+      <header className="sticky top-0 z-10 border-b border-border bg-card">
+        <div className="flex items-center justify-between px-6 pb-4 pt-10">
+          <div className="flex items-center gap-3">
+            <Avatar className="size-12">
+              {profile?.photoURL ? (
+                <AvatarImage src={profile.photoURL} alt="Trainee" />
+              ) : (
+                <AvatarFallback>{profile?.displayName?.trim() ? profile.displayName.substring(0, 2).toUpperCase() : 'TR'}</AvatarFallback>
+              )}
+            </Avatar>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t.profile}</p>
+              <h1 className="font-heading text-xl font-bold tracking-tight">Hi, {profile?.displayName?.split(' ')[0] || 'Trainee'}</h1>
+            </div>
           </div>
-          <div>
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{t.profile}</p>
-            <h1 className="text-xl font-bold tracking-tight text-slate-900">Hi, {profile?.displayName?.split(' ')[0] || 'Trainee'}</h1>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="icon" aria-label="Toggle language" onClick={toggleLanguage}>
+              <Globe className="size-5" />
+            </Button>
+            <Button variant="outline" size="icon" aria-label="Log out" onClick={handleLogout} className="text-destructive">
+              <LogOut className="size-5" />
+            </Button>
           </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <button onClick={toggleLanguage} className="flex size-11 items-center justify-center rounded-full bg-white border border-slate-200 shadow-sm text-slate-700 hover:text-primary transition-colors">
-            <Globe className="w-5 h-5" />
-          </button>
-          <button onClick={handleLogout} className="flex size-11 items-center justify-center rounded-full bg-white border border-slate-200 shadow-sm text-red-500 hover:bg-red-50 transition-colors">
-            <LogOut className="w-5 h-5 ml-0.5" />
-          </button>
         </div>
       </header>
 
-      <main className="flex-1 px-6 mt-4">
-        {/* Subscription Banner */}
-        {(isExpired || isExpiringSoon) && (
-          <div className={`mb-6 rounded-3xl p-4 flex items-start gap-3 border ${
-            isExpired
-              ? 'bg-red-50 border-red-200 text-red-700'
-              : 'bg-amber-50 border-amber-200 text-amber-700'
-          }`}>
-            <div className={`mt-0.5 shrink-0 size-8 rounded-full flex items-center justify-center ${
-              isExpired ? 'bg-red-100' : 'bg-amber-100'
-            }`}>
-              {isExpired
-                ? <AlertTriangle className="w-4 h-4" />
-                : <Clock className="w-4 h-4" />}
-            </div>
+      <main className="mx-auto w-full max-w-2xl flex-1 px-6 pt-4" aria-busy={loading}>
+        {loading ? (
+          <div className="flex flex-col gap-4" role="status" aria-label="Loading">
             <div>
-              <p className="font-bold text-sm">
+              <Skeleton className="h-8 w-2/3" />
+              <Skeleton className="mt-2 h-4 w-1/2" />
+            </div>
+            <Card>
+              <CardPanel className="flex flex-col gap-3 p-5">
+                <Skeleton className="h-4 w-1/4" />
+                <Skeleton className="h-12 w-full rounded-xl" />
+                <Skeleton className="h-32 w-full rounded-xl" />
+                <Skeleton className="h-12 w-full rounded-xl" />
+              </CardPanel>
+            </Card>
+          </div>
+        ) : (
+        <>
+        {(isExpired || isExpiringSoon) && (
+          <Alert variant={isExpired ? 'destructive' : 'warning'} className="mb-4 flex items-start gap-3">
+            <span className="mt-0.5 shrink-0">{isExpired ? <AlertTriangle className="size-4" /> : <Clock className="size-4" />}</span>
+            <span>
+              <span className="block font-bold">
                 {isExpired
                   ? (lang === 'am' ? 'የደንበኝነት ምዝገባ አብቅቷል' : 'Subscription Expired')
                   : (lang === 'am' ? 'ደንበኝነት ምዝገባ እያለቀ ነው' : 'Subscription Expiring Soon')}
-              </p>
-              <p className="text-xs mt-0.5 font-medium opacity-80">
+              </span>
+              <AlertDescription>
                 {isExpired
                   ? (lang === 'am'
                     ? `ደንበኝነት ምዝገባዎ ${subscriptionExpiresAt ? format(subscriptionExpiresAt, 'MMM d, yyyy') : ''} ጀምሮ ቆሟል። ለማደስ አሰልጣኝዎን ያነጋግሩ።`
@@ -639,176 +651,161 @@ export default function TraineeDashboard() {
                   : (lang === 'am'
                     ? `ደንበኝነት ምዝገባዎ በ${daysLeft} ቀን ውስጥ ያልቃል።`
                     : `Your subscription expires in ${daysLeft} day${daysLeft === 1 ? '' : 's'}.`)}
-              </p>
-            </div>
-          </div>
+              </AlertDescription>
+            </span>
+          </Alert>
         )}
 
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight mb-2 text-slate-900">{t.howCanWeHelp}</h1>
-          <p className="text-slate-500 font-medium">{t.subtitle}</p>
+        <div className="mb-6">
+          <h1 className="font-heading text-3xl font-bold tracking-tight">{t.howCanWeHelp}</h1>
+          <p className="mt-1 font-medium text-muted-foreground">{t.subtitle}</p>
         </div>
 
         {submitted ? (
-          <div className="flex-1 flex flex-col items-center justify-center text-center animate-in fade-in zoom-in duration-300 py-12 bg-white rounded-3xl border border-slate-100 shadow-sm">
-            <div className="w-20 h-20 bg-[#E5F5E5] rounded-full flex items-center justify-center mb-6 shadow-sm">
-              <CheckCircle2 className="w-10 h-10 text-primary-dark" />
-            </div>
-            <h3 className="text-2xl font-bold mb-2 text-slate-900">{t.success}</h3>
-            <p className="text-slate-500 max-w-[250px] leading-relaxed">
-              {t.successSub}
-            </p>
-          </div>
+          <Card>
+            <CardPanel className="flex flex-col items-center py-12 text-center">
+              <span className="mb-4 flex size-16 items-center justify-center rounded-full bg-success/15 text-success">
+                <CheckCircle2 className="size-8" />
+              </span>
+              <h3 className="font-heading text-2xl font-bold">{t.success}</h3>
+              <p className="mt-2 max-w-[260px] leading-relaxed text-muted-foreground">{t.successSub}</p>
+            </CardPanel>
+          </Card>
         ) : (
-          <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-            <div className="flex flex-col gap-3">
-              <label className="text-sm font-bold text-slate-800 uppercase tracking-wide">{t.urgency}</label>
-              <div className="flex gap-3">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+            <div className="flex flex-col gap-2">
+              <span className="text-[13px] font-semibold">{t.urgency}</span>
+              <div className="grid grid-cols-2 gap-2">
                 {['Normal', 'High'].map((level) => (
-                  <button
+                  <Button
                     key={level}
                     type="button"
+                    variant={urgency === level ? (level === 'High' ? 'destructive' : 'default') : 'outline'}
+                    size="lg"
                     onClick={() => setUrgency(level)}
-                    className={`flex-1 py-4 rounded-2xl border-2 font-bold transition-all duration-200 active:scale-95 ${
-                      urgency === level 
-                        ? level === 'High' 
-                          ? 'bg-red-50 border-red-500 text-red-700 shadow-sm' 
-                          : 'bg-primary/10 border-primary text-primary-dark shadow-sm'
-                        : 'bg-white border-slate-100 text-slate-500 hover:border-slate-300'
-                    }`}
                   >
                     {level === 'Normal' ? t.normal : t.high}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
 
-            <div className="flex flex-col gap-3">
-              <label className="text-sm font-bold text-slate-800 uppercase tracking-wide">{t.message}</label>
-              <textarea 
+            <div className="flex flex-col gap-2">
+              <label htmlFor="inquiry-message" className="text-[13px] font-semibold">{t.message}</label>
+              <Textarea
+                id="inquiry-message"
+                aria-label={t.placeholder}
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder={t.placeholder}
-                className="w-full min-h-[160px] rounded-3xl border-2 border-slate-100 bg-white p-5 font-medium text-slate-900 placeholder:text-slate-400 focus:border-primary focus:outline-none transition-all resize-none shadow-sm"
+                className="min-h-[150px]"
                 required
               />
             </div>
 
-            {/* Attachments */}
-            <div className="flex flex-col gap-3">
-              <label className="text-sm font-bold text-slate-800 uppercase tracking-wide">{t.attachments}</label>
-              
-              <div className="flex gap-3">
-                <button type="button" onClick={() => cameraInputRef.current?.click()} className="flex flex-col items-center justify-center gap-2 p-4 rounded-3xl border-2 border-slate-100 bg-white text-slate-600 hover:border-slate-300 transition-colors flex-1 shadow-sm active:scale-95">
-                  <Camera className="w-6 h-6 text-slate-400" />
-                  <span className="text-xs font-bold uppercase">{t.camera}</span>
-                </button>
-                <button type="button" onClick={() => fileInputRef.current?.click()} className="flex flex-col items-center justify-center gap-2 p-4 rounded-3xl border-2 border-slate-100 bg-white text-slate-600 hover:border-slate-300 transition-colors flex-1 shadow-sm active:scale-95">
-                  <ImageIcon className="w-6 h-6 text-slate-400" />
-                  <span className="text-xs font-bold uppercase">{t.gallery}</span>
-                </button>
-                <button
+            <div className="flex flex-col gap-2">
+              <span className="text-[13px] font-semibold">{t.attachments}</span>
+              <div className="grid grid-cols-4 gap-2">
+                <Button type="button" variant="outline" className="h-auto flex-col gap-1 py-3" onClick={() => cameraInputRef.current?.click()}>
+                  <Camera className="size-5 text-muted-foreground" />
+                  <span className="text-[11px] font-bold uppercase">{t.camera}</span>
+                </Button>
+                <Button type="button" variant="outline" className="h-auto flex-col gap-1 py-3" onClick={() => fileInputRef.current?.click()}>
+                  <ImageIcon className="size-5 text-muted-foreground" />
+                  <span className="text-[11px] font-bold uppercase">{t.gallery}</span>
+                </Button>
+                <Button
                   type="button"
+                  variant="outline"
+                  className="h-auto flex-col gap-1 py-3"
                   onClick={() => videoInputRef.current?.click()}
-                  className="flex flex-col items-center justify-center gap-2 p-4 rounded-3xl border-2 border-slate-100 bg-white text-slate-600 hover:border-slate-300 transition-colors flex-1 shadow-sm active:scale-95"
                 >
-                  <Video className="w-6 h-6 text-slate-400" />
-                  <span className="text-xs font-bold uppercase">Video</span>
-                </button>
-                <button 
-                  type="button" 
-                  onClick={isRecording ? stopRecording : startRecording} 
-                  className={`flex flex-col items-center justify-center gap-2 p-4 rounded-3xl border-2 transition-colors flex-1 shadow-sm active:scale-95 ${isRecording ? 'bg-red-50 border-red-300 text-red-600' : 'border-slate-100 bg-white text-slate-600 hover:border-slate-300'}`}
+                  <Video className="size-5 text-muted-foreground" />
+                  <span className="text-[11px] font-bold uppercase">Video</span>
+                </Button>
+                <Button
+                  type="button"
+                  variant={isRecording ? 'destructive' : 'outline'}
+                  className="h-auto flex-col gap-1 py-3"
+                  onClick={isRecording ? stopRecording : startRecording}
                 >
-                  {isRecording ? <Square className="w-6 h-6 fill-current" /> : <Mic className="w-6 h-6 text-slate-400" />}
-                  <span className="text-xs font-bold uppercase">{isRecording ? t.stop : t.voice}</span>
-                </button>
+                  {isRecording ? <Square className="size-5 fill-current" /> : <Mic className="size-5 text-muted-foreground" />}
+                  <span className="text-[11px] font-bold uppercase">{isRecording ? t.stop : t.voice}</span>
+                </Button>
               </div>
 
               <input type="file" accept="image/*" capture="environment" ref={cameraInputRef} onChange={handleImageUpload} className="hidden" />
               <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageUpload} className="hidden" />
               <input type="file" accept="video/*" ref={videoInputRef} onChange={handleVideoUpload} className="hidden" />
 
-              {/* Previews */}
               {(image || audioUrl || videoPreviewUrl || videoStatus) && (
-                <div className="flex flex-col gap-3 mt-2 p-4 rounded-3xl border-2 border-slate-100 bg-slate-50">
-                  {image && (
-                    <div className="relative w-full max-w-[200px] rounded-xl overflow-hidden shadow-sm">
-                      <Image src={image} alt="Preview" width={200} height={200} className="w-full h-auto object-cover" />
-                      <button type="button" onClick={() => setImage(null)} className="absolute top-2 right-2 p-2 bg-black/50 backdrop-blur-sm text-white rounded-full hover:bg-black/70 transition-colors">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  )}
-                  {videoPreviewUrl && (
-                    <div className="relative rounded-2xl overflow-hidden border border-slate-100 bg-white shadow-sm p-3">
-                      <video src={videoPreviewUrl} controls className="w-full rounded-xl" />
-                      {videoDetails && (
-                        <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                          {videoDetails.width}x{videoDetails.height} • {videoDetails.durationSeconds}s
-                        </p>
-                      )}
-                      <button type="button" onClick={clearVideoSelection} className="absolute top-5 right-5 p-2 bg-black/50 backdrop-blur-sm text-white rounded-full hover:bg-black/70 transition-colors">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  )}
-                  {audioUrl && (
-                    <div className="flex items-center gap-3 bg-white p-3 rounded-2xl shadow-sm border border-slate-100">
-                      <audio src={audioUrl} controls className="h-10 w-full" />
-                      <button type="button" onClick={() => { setAudioUrl(null); setAudioBlob(null); }} className="p-2.5 text-red-500 hover:bg-red-50 rounded-full transition-colors shrink-0">
-                        <Trash2 className="w-5 h-5" />
-                      </button>
-                    </div>
-                  )}
-                  {videoStatus && (
-                    <p className="text-sm font-medium text-slate-600">{videoStatus}</p>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Latest Trainer Message */}
-            <div className="flex flex-col gap-3 mt-4">
-              <label className="text-sm font-bold text-slate-800 uppercase tracking-wide">{t.trainerMessage}</label>
-              <div className="w-full min-h-[120px] rounded-3xl border-2 border-slate-100 bg-white shadow-sm p-6 text-slate-700 flex flex-col justify-center">
-                {latestResponse ? (
-                  <div className="flex flex-col gap-3">
-                    <p className="text-xs font-bold text-primary-dark uppercase tracking-wider bg-primary/10 self-start px-3 py-1 rounded-full">
-                      {latestResponse.type === 'chat_message'
-                        ? 'Direct message'
-                        : `Re: ${latestResponse.message.length > 50 ? latestResponse.message.substring(0, 50) + '...' : latestResponse.message}`}
-                    </p>
-                    <p className="text-base font-medium leading-relaxed text-slate-800">
-                      {latestResponse.response}
-                    </p>
-                    {latestResponse.response_audio_url && (
-                      <audio src={latestResponse.response_audio_url} controls className="h-10 w-full" />
+                <Card>
+                  <CardPanel className="flex flex-col gap-3 p-4">
+                    {image && (
+                      <div className="relative w-full max-w-[220px] overflow-hidden rounded-xl border border-border">
+                        <Image src={image} alt="Preview" width={220} height={220} className="h-auto w-full object-cover" />
+                        <Button type="button" variant="destructive" size="icon-sm" className="absolute right-2 top-2" onClick={() => setImage(null)} aria-label="Remove image">
+                          <Trash2 className="size-4" />
+                        </Button>
+                      </div>
                     )}
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center text-sm font-medium text-slate-400 italic">
-                    {t.noMessages}
-                  </div>
-                )}
-              </div>
+                    {videoPreviewUrl && (
+                      <div className="rounded-xl border border-border bg-muted p-3">
+                        <video src={videoPreviewUrl} controls className="w-full rounded-lg" />
+                        {videoDetails && (
+                          <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                            {videoDetails.width}x{videoDetails.height} • {videoDetails.durationSeconds}s
+                          </p>
+                        )}
+                        <Button type="button" variant="destructive-outline" size="sm" className="mt-2" onClick={clearVideoSelection}>
+                          <Trash2 className="size-4" /> Remove video
+                        </Button>
+                      </div>
+                    )}
+                    {audioUrl && (
+                      <div className="flex items-center gap-2 rounded-xl border border-border bg-muted p-3">
+                        <audio src={audioUrl} controls className="h-10 w-full" />
+                        <Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => { setAudioUrl(null); setAudioBlob(null); }} aria-label="Remove audio">
+                          <Trash2 className="size-5" />
+                        </Button>
+                      </div>
+                    )}
+                    {videoStatus && <p className="text-sm font-medium text-muted-foreground">{videoStatus}</p>}
+                  </CardPanel>
+                </Card>
+              )}
             </div>
 
-            <button 
-              type="submit"
-              disabled={isSubmitting || !message.trim()}
-              className="w-full h-16 bg-primary hover:bg-[#7ED465] text-primary-dark text-lg font-bold rounded-full shadow-[0_8px_20px_-4px_rgba(141,235,113,0.4)] transition-all active:scale-[0.98] flex items-center justify-center gap-3 disabled:opacity-50 disabled:active:scale-100 mt-6"
-            >
-              {isSubmitting ? (
-                <div className="w-6 h-6 border-3 border-primary-dark border-t-transparent rounded-full animate-spin"></div>
-              ) : (
-                <>
-                  <span>{t.send}</span>
-                  <Send className="w-6 h-6" />
-                </>
-              )}
-            </button>
+            <div className="flex flex-col gap-2">
+              <span className="text-[13px] font-semibold">{t.trainerMessage}</span>
+              <Card>
+                <CardPanel className="flex min-h-[110px] flex-col justify-center p-5">
+                  {latestResponse ? (
+                    <div className="flex flex-col gap-2">
+                      <Badge variant="secondary" size="sm" className={cn('self-start')}>
+                        {latestResponse.type === 'chat_message'
+                          ? 'Direct message'
+                          : `Re: ${latestResponse.message.length > 50 ? latestResponse.message.substring(0, 50) + '...' : latestResponse.message}`}
+                      </Badge>
+                      <p className="text-[15px] font-medium leading-relaxed">{latestResponse.response}</p>
+                      {latestResponse.response_audio_url && (
+                        <audio src={latestResponse.response_audio_url} controls className="h-10 w-full" />
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-center text-sm font-medium italic text-muted-foreground">{t.noMessages}</p>
+                  )}
+                </CardPanel>
+              </Card>
+            </div>
+
+            <Button type="submit" size="lg" loading={isSubmitting} disabled={!message.trim()} className="mt-1 w-full">
+              <span>{t.send}</span>
+              <Send className="size-5" />
+            </Button>
           </form>
+        )}
+        </>
         )}
       </main>
 

@@ -9,12 +9,19 @@ import {
 } from './db'
 
 const TRAINER_PHONE = '+251911223344'
-// Pre-existing trainee in the DB that the trainer can chat with (not the login trainee).
-const CHALA_ID = '59fa734a-1ca5-4869-8998-62c36c210aff'
+// Seed phone of a pre-existing trainee the trainer can chat with (not the login trainee).
+// The id + display name are resolved live from Supabase — never hardcoded.
+const PEER_TRAINEE_PHONE = '+251933445566'
 
-async function openChatWith(page: Page, peerId: string) {
+async function getPeer() {
+  const peer = await getProfileByPhone(PEER_TRAINEE_PHONE)
+  expect(peer, 'peer trainee profile must exist in DB').not.toBeNull()
+  return peer!
+}
+
+async function openChatWith(page: Page, peerId: string, peerName: string) {
   await page.goto(`/chat?peerId=${peerId}`)
-  await page.getByRole('heading', { name: 'Chala Bekele' }).waitFor({ timeout: 45_000 })
+  await page.getByRole('heading', { name: peerName }).waitFor({ timeout: 45_000 })
   await settle(page)
 }
 
@@ -29,19 +36,21 @@ test.describe('Chat flow (trainer ↔ trainee)', () => {
   test('B1. opening a trainee chat shows the peer and a real DB chat', async ({ page }) => {
     const trainer = await getProfileByPhone(TRAINER_PHONE)
     expect(trainer, 'trainer profile must exist in DB').not.toBeNull()
+    const peer = await getPeer()
 
-    await openChatWith(page, CHALA_ID)
+    await openChatWith(page, peer.id, peer.display_name)
 
-    await expect(page.getByRole('heading', { name: 'Chala Bekele' })).toBeVisible()
-    const chatId = await findPairChat(trainer!.id, CHALA_ID)
-    expect(chatId, 'a chat between trainer and Chala must already exist in DB').not.toBeNull()
+    await expect(page.getByRole('heading', { name: peer.display_name })).toBeVisible()
+    const chatId = await findPairChat(trainer!.id, peer.id)
+    expect(chatId, `a chat between trainer and ${peer.display_name} must already exist in DB`).not.toBeNull()
   })
 
   test('B2. sending a text message persists the row in Supabase', async ({ page }) => {
     const trainer = await getProfileByPhone(TRAINER_PHONE)
     const marker = uniqueMarker('chat-e2e')
+    const peer = await getPeer()
 
-    await openChatWith(page, CHALA_ID)
+    await openChatWith(page, peer.id, peer.display_name)
 
     await page.getByRole('textbox', { name: 'Message...' }).fill(marker)
     await page.locator('form button[type="submit"]').click()
@@ -58,22 +67,24 @@ test.describe('Chat flow (trainer ↔ trainee)', () => {
     page,
   }) => {
     const trainer = await getProfileByPhone(TRAINER_PHONE)
-    const before = await countSharedChats(trainer!.id, CHALA_ID)
+    const peer = await getPeer()
+    const before = await countSharedChats(trainer!.id, peer.id)
 
     const marker = uniqueMarker('chat-dup')
-    await openChatWith(page, CHALA_ID)
+    await openChatWith(page, peer.id, peer.display_name)
     await page.getByRole('textbox', { name: 'Message...' }).fill(marker)
     await page.locator('form button[type="submit"]').click()
     await expect(page.getByText(marker, { exact: true })).toBeVisible({ timeout: 15_000 })
 
-    const after = await countSharedChats(trainer!.id, CHALA_ID)
+    const after = await countSharedChats(trainer!.id, peer.id)
     expect(after, 'sending a message must NOT create a new chat for the pair').toBe(before)
   })
 
   test('C2. sending updates chats.last_message in the DB', async ({ page }) => {
     const marker = uniqueMarker('chat-last')
+    const peer = await getPeer()
 
-    await openChatWith(page, CHALA_ID)
+    await openChatWith(page, peer.id, peer.display_name)
     await page.getByRole('textbox', { name: 'Message...' }).fill(marker)
     await page.locator('form button[type="submit"]').click()
     await expect(page.getByText(marker, { exact: true })).toBeVisible({ timeout: 15_000 })

@@ -3,9 +3,23 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
-import { LogOut, User, Lock, BellRing, Settings2, X, ChevronRight, Phone, Mail, Sparkles } from 'lucide-react';
+import { LogOut, User, Lock, BellRing, Settings2, ChevronRight } from 'lucide-react';
 import { useAuthStore, useAppStore } from '@/lib/store';
 import { TrainerBottomNav } from '@/components/TrainerBottomNav';
+import { Button } from '@/components/ui/button';
+import { Card, CardPanel } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Field, FieldLabel } from '@/components/ui/field';
+import { Switch } from '@/components/ui/switch';
+import {
+  Dialog,
+  DialogPopup,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogPanel,
+  DialogFooter,
+} from '@/components/ui/dialog';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -13,20 +27,13 @@ export default function SettingsPage() {
   const { profile, setProfile } = useAuthStore();
   const { isAmharic, setIsAmharic } = useAppStore();
 
-  // Active modal control
   const [activeModal, setActiveModal] = useState<'profile' | 'notifications' | 'privacy' | 'preferences' | null>(null);
-
-  // Form states
   const [displayName, setDisplayName] = useState('');
   const [focusArea, setFocusArea] = useState('');
   const [updating, setUpdating] = useState(false);
-
-  // Toggle states
   const [smsAlerts, setSmsAlerts] = useState(true);
   const [emailAlerts, setEmailAlerts] = useState(false);
   const [weeklyDigest, setWeeklyDigest] = useState(true);
-
-  // Toast feedback
   const [toastMessage, setToastMessage] = useState('');
 
   useEffect(() => {
@@ -49,26 +56,14 @@ export default function SettingsPage() {
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!profile) return;
-
     setUpdating(true);
     try {
       const { error } = await supabase
         .from('profiles')
-        .update({
-          display_name: displayName.trim(),
-          focus_area: focusArea.trim(),
-        })
+        .update({ display_name: displayName.trim(), focus_area: focusArea.trim() })
         .eq('id', profile.uid);
-
       if (error) throw error;
-
-      // Update local state store
-      setProfile({
-        ...profile,
-        displayName: displayName.trim(),
-        focusArea: focusArea.trim(),
-      });
-
+      setProfile({ ...profile, displayName: displayName.trim(), focusArea: focusArea.trim() });
       showToast('Profile updated successfully!');
       setActiveModal(null);
     } catch (err: any) {
@@ -79,248 +74,182 @@ export default function SettingsPage() {
     }
   };
 
-  const handleSavePreferences = (e: React.FormEvent) => {
-    e.preventDefault();
-    showToast('Preferences updated successfully!');
-    setActiveModal(null);
-  };
-
   const navItems = [
-    { icon: User, label: 'Account Profile', description: 'Update your personal info', onClick: () => setActiveModal('profile') },
-    { icon: BellRing, label: 'Notifications', description: 'Configure alert preferences', onClick: () => setActiveModal('notifications') },
-    { icon: Lock, label: 'Privacy & Security', description: 'Password and security settings', onClick: () => setActiveModal('privacy') },
-    { icon: Settings2, label: 'App Preferences', description: 'Language and themes', onClick: () => setActiveModal('preferences') },
+    { icon: User, label: 'Account Profile', description: 'Update your personal info', modal: 'profile' as const },
+    { icon: BellRing, label: 'Notifications', description: 'Configure alert preferences', modal: 'notifications' as const },
+    { icon: Lock, label: 'Privacy & Security', description: 'Password and security settings', modal: 'privacy' as const },
+    { icon: Settings2, label: 'App Preferences', description: 'Language and themes', modal: 'preferences' as const },
   ];
 
   return (
-    <div className="flex min-h-[100dvh] w-full flex-col bg-background-light font-sans text-slate-900 pb-24">
-      {/* Toast popup */}
+    <div className="flex min-h-svh w-full flex-col bg-background font-sans text-foreground pb-24">
       {toastMessage && (
-        <div className="fixed top-8 left-1/2 -translate-x-1/2 z-50 px-6 py-3.5 bg-slate-900/95 backdrop-blur-md border border-[#8DEC71]/30 text-white rounded-full text-sm font-bold shadow-xl animate-in fade-in slide-in-from-top duration-300">
+        <div className="fixed left-1/2 top-6 z-[110] -translate-x-1/2 rounded-full border border-border bg-card px-5 py-2.5 text-sm font-semibold shadow-lg">
           {toastMessage}
         </div>
       )}
 
-      <header className="px-6 pt-12 pb-6 bg-white border-b border-slate-100 mb-6 sticky top-0 z-10">
-        <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
-        <p className="text-sm text-slate-500 font-medium mt-1">Manage your app configurations</p>
+      <header className="sticky top-0 z-10 border-b border-border bg-card px-6 pb-6 pt-10">
+        <h1 className="font-heading text-2xl font-bold tracking-tight">Settings</h1>
+        <p className="mt-1 text-sm font-medium text-muted-foreground">Manage your app configurations</p>
       </header>
-      <main className="px-6 flex-1 flex flex-col items-center">
-        
-        <div className="w-full max-w-sm mb-8 flex flex-col gap-3">
-          {navItems.map((item, idx) => (
-            <button key={idx} onClick={item.onClick} className="flex items-center gap-4 p-4 bg-white rounded-2xl border border-slate-100 hover:border-primary/50 transition-colors shadow-sm text-left">
-              <div className="size-10 rounded-full bg-slate-50 flex items-center justify-center shrink-0 border border-slate-100">
-                <item.icon className="w-5 h-5 text-slate-500" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-bold text-slate-900 text-[15px]">{item.label}</h3>
-                <p className="text-xs text-slate-500 font-medium">{item.description}</p>
-              </div>
-              <ChevronRight className="w-4 h-4 text-slate-300" />
+      <main className="mx-auto flex w-full max-w-md flex-1 flex-col items-center px-6 pt-6">
+        <div className="mb-6 flex w-full flex-col gap-2">
+          {navItems.map((item) => (
+            <button
+              key={item.label}
+              type="button"
+              onClick={() => setActiveModal(item.modal)}
+              className="flex items-center gap-3 rounded-xl border border-border bg-card p-4 text-left shadow-[0_1px_0_0_var(--border)] transition-colors hover:bg-accent/50"
+            >
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                <item.icon className="size-5" />
+              </span>
+              <span className="flex-1">
+                <span className="block text-[15px] font-bold">{item.label}</span>
+                <span className="block text-xs font-medium text-muted-foreground">{item.description}</span>
+              </span>
+              <ChevronRight className="size-4 text-muted-foreground" />
             </button>
           ))}
         </div>
 
-        <button 
-          onClick={handleLogout}
-          className="flex w-full max-w-sm items-center justify-center gap-2 p-4 bg-white rounded-2xl border border-red-200 text-red-500 font-bold hover:bg-red-50 transition-colors shadow-sm mb-6"
-        >
-          <LogOut className="w-5 h-5" />
+        <Button variant="destructive-outline" size="lg" className="w-full" onClick={handleLogout}>
+          <LogOut className="size-5" />
           Log Out
-        </button>
+        </Button>
 
         {profile && (
-          <p className="text-xs text-slate-400 mt-2 font-medium">Logged in as {profile.email || profile.phoneNumber}</p>
+          <p className="mt-3 text-xs font-medium text-muted-foreground">
+            Logged in as {profile.email || profile.phoneNumber}
+          </p>
         )}
       </main>
 
-      {/* MODALS */}
-
-      {/* 1. PROFILE MODAL */}
-      {activeModal === 'profile' && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setActiveModal(null)} />
-          <form 
-            onSubmit={handleSaveProfile}
-            className="relative w-full max-w-md bg-white rounded-[2rem] shadow-2xl overflow-hidden flex flex-col animate-in slide-in-from-bottom sm:zoom-in-95 duration-300 p-6"
-          >
-            <div className="flex items-center justify-between mb-6 pb-2 border-b border-slate-100">
-              <h2 className="text-xl font-bold text-slate-900">Account Profile</h2>
-              <button type="button" onClick={() => setActiveModal(null)} className="p-2 text-slate-400 hover:bg-slate-50 rounded-full">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="flex flex-col gap-4">
-              <div>
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5 block">Full Name</label>
-                <input 
-                  type="text"
-                  required
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  className="w-full h-12 px-4 rounded-xl border border-slate-200 font-medium text-slate-900 focus:border-primary focus:outline-none bg-slate-50/50"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5 block">Expert Focus Area</label>
-                <input 
-                  type="text"
+      <Dialog open={activeModal === 'profile'} onOpenChange={(o) => !o && setActiveModal(null)}>
+        <DialogPopup>
+          <form onSubmit={handleSaveProfile}>
+            <DialogHeader>
+              <DialogTitle>Account Profile</DialogTitle>
+              <DialogDescription>Update your display name and expert focus area.</DialogDescription>
+            </DialogHeader>
+            <DialogPanel className="flex flex-col gap-3">
+              <Field>
+                <FieldLabel htmlFor="settings-name">Full Name</FieldLabel>
+                <Input id="settings-name" required value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="settings-focus">Expert Focus Area</FieldLabel>
+                <Input
+                  id="settings-focus"
                   required
                   value={focusArea}
                   onChange={(e) => setFocusArea(e.target.value)}
-                  className="w-full h-12 px-4 rounded-xl border border-slate-200 font-medium text-slate-900 focus:border-primary focus:outline-none bg-slate-50/50"
                   placeholder="e.g. Brooding Management"
                 />
-              </div>
-            </div>
-
-            <button 
-              type="submit"
-              disabled={updating}
-              className="mt-8 w-full h-14 bg-primary text-primary-dark font-bold rounded-full transition-transform active:scale-[0.98] flex items-center justify-center disabled:opacity-50"
-            >
-              {updating ? 'Saving...' : 'Save Changes'}
-            </button>
+              </Field>
+            </DialogPanel>
+            <DialogFooter>
+              <Button type="submit" loading={updating} className="w-full">
+                Save Changes
+              </Button>
+            </DialogFooter>
           </form>
-        </div>
-      )}
+        </DialogPopup>
+      </Dialog>
 
-      {/* 2. NOTIFICATIONS MODAL */}
-      {activeModal === 'notifications' && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setActiveModal(null)} />
-          <form 
-            onSubmit={handleSavePreferences}
-            className="relative w-full max-w-md bg-white rounded-[2rem] shadow-2xl overflow-hidden flex flex-col p-6 animate-in slide-in-from-bottom sm:zoom-in-95 duration-300"
-          >
-            <div className="flex items-center justify-between mb-6 pb-2 border-b border-slate-100">
-              <h2 className="text-xl font-bold text-slate-900">Notifications</h2>
-              <button type="button" onClick={() => setActiveModal(null)} className="p-2 text-slate-400 hover:bg-slate-50 rounded-full">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="flex flex-col gap-5 my-2">
-              <div className="flex items-center justify-between">
+      <Dialog open={activeModal === 'notifications'} onOpenChange={(o) => !o && setActiveModal(null)}>
+        <DialogPopup>
+          <DialogHeader>
+            <DialogTitle>Notifications</DialogTitle>
+            <DialogDescription>Choose how you hear about urgent trainee issues.</DialogDescription>
+          </DialogHeader>
+          <DialogPanel className="flex flex-col gap-4">
+            {[
+              { label: 'SMS Inquiry Alerts', hint: 'Text when trainee submits urgent issue', value: smsAlerts, set: setSmsAlerts },
+              { label: 'Email Reports', hint: 'Daily trainee performance updates', value: emailAlerts, set: setEmailAlerts },
+              { label: 'Weekly Roster Digests', hint: 'Roster stats and inactive alarms', value: weeklyDigest, set: setWeeklyDigest },
+            ].map((row) => (
+              <div key={row.label} className="flex items-center justify-between gap-3">
                 <div>
-                  <h3 className="font-bold text-slate-900 text-sm">SMS Inquiry Alerts</h3>
-                  <p className="text-xs text-slate-500 font-medium">Text when trainee submits urgent issue</p>
+                  <p className="text-sm font-bold">{row.label}</p>
+                  <p className="text-xs font-medium text-muted-foreground">{row.hint}</p>
                 </div>
-                <button 
-                  type="button"
-                  onClick={() => setSmsAlerts(!smsAlerts)}
-                  className={`w-12 h-7 flex items-center rounded-full transition-colors duration-300 p-1 cursor-pointer outline-none ${smsAlerts ? 'bg-primary' : 'bg-slate-200'}`}
-                >
-                  <div className={`size-5 bg-white rounded-full shadow-md transform transition-transform duration-300 ${smsAlerts ? 'translate-x-5' : 'translate-x-0'}`}></div>
-                </button>
+                <Switch checked={row.value} onCheckedChange={row.set} label={row.label} />
               </div>
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-bold text-slate-900 text-sm">Email Reports</h3>
-                  <p className="text-xs text-slate-500 font-medium">Daily trainee performance updates</p>
-                </div>
-                <button 
-                  type="button"
-                  onClick={() => setEmailAlerts(!emailAlerts)}
-                  className={`w-12 h-7 flex items-center rounded-full transition-colors duration-300 p-1 cursor-pointer outline-none ${emailAlerts ? 'bg-primary' : 'bg-slate-200'}`}
-                >
-                  <div className={`size-5 bg-white rounded-full shadow-md transform transition-transform duration-300 ${emailAlerts ? 'translate-x-5' : 'translate-x-0'}`}></div>
-                </button>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-bold text-slate-900 text-sm">Weekly Roster Digests</h3>
-                  <p className="text-xs text-slate-500 font-medium">Roster stats and inactive alarms</p>
-                </div>
-                <button 
-                  type="button"
-                  onClick={() => setWeeklyDigest(!weeklyDigest)}
-                  className={`w-12 h-7 flex items-center rounded-full transition-colors duration-300 p-1 cursor-pointer outline-none ${weeklyDigest ? 'bg-primary' : 'bg-slate-200'}`}
-                >
-                  <div className={`size-5 bg-white rounded-full shadow-md transform transition-transform duration-300 ${weeklyDigest ? 'translate-x-5' : 'translate-x-0'}`}></div>
-                </button>
-              </div>
-            </div>
-
-            <button 
-              type="submit"
-              className="mt-8 w-full h-14 bg-primary text-primary-dark font-bold rounded-full transition-transform active:scale-[0.98]"
+            ))}
+          </DialogPanel>
+          <DialogFooter>
+            <Button
+              className="w-full"
+              onClick={() => {
+                showToast('Preferences updated successfully!');
+                setActiveModal(null);
+              }}
             >
               Save Alert Preferences
-            </button>
-          </form>
-        </div>
-      )}
+            </Button>
+          </DialogFooter>
+        </DialogPopup>
+      </Dialog>
 
-      {/* 3. PRIVACY & SECURITY MODAL */}
-      {activeModal === 'privacy' && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setActiveModal(null)} />
-          <div className="relative w-full max-w-md bg-white rounded-[2rem] shadow-2xl overflow-hidden flex flex-col p-6 animate-in slide-in-from-bottom sm:zoom-in-95 duration-300">
-            <div className="flex items-center justify-between mb-6 pb-2 border-b border-slate-100">
-              <h2 className="text-xl font-bold text-slate-900">Privacy & Security</h2>
-              <button onClick={() => setActiveModal(null)} className="p-2 text-slate-400 hover:bg-slate-50 rounded-full">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="flex flex-col gap-4">
-              <div className="p-4 bg-slate-50 rounded-2xl">
-                <h4 className="font-bold text-slate-900 text-sm mb-1">Roster Locking</h4>
-                <p className="text-xs text-slate-500 font-medium leading-relaxed">
+      <Dialog open={activeModal === 'privacy'} onOpenChange={(o) => !o && setActiveModal(null)}>
+        <DialogPopup>
+          <DialogHeader>
+            <DialogTitle>Privacy & Security</DialogTitle>
+            <DialogDescription>How trainee access and media are protected.</DialogDescription>
+          </DialogHeader>
+          <DialogPanel className="flex flex-col gap-3">
+            <Card>
+              <CardPanel className="p-4">
+                <p className="text-sm font-bold">Roster Locking</p>
+                <p className="mt-1 text-xs font-medium leading-relaxed text-muted-foreground">
                   Only trainees pre-authenticated by you can register. Unknown phone numbers are blocked from signup.
                 </p>
-              </div>
-              <div className="p-4 bg-slate-50 rounded-2xl">
-                <h4 className="font-bold text-slate-900 text-sm mb-1">Secure Media Uploads</h4>
-                <p className="text-xs text-slate-500 font-medium leading-relaxed">
-                  Media items are stored in custom Cloudflare R2 bucket with 1-hour secure presigned token expirations to prevent public exposure.
+              </CardPanel>
+            </Card>
+            <Card>
+              <CardPanel className="p-4">
+                <p className="text-sm font-bold">Secure Media Uploads</p>
+                <p className="mt-1 text-xs font-medium leading-relaxed text-muted-foreground">
+                  Media items are stored in a Cloudflare R2 bucket with short-lived secure URLs to prevent public exposure.
                 </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+              </CardPanel>
+            </Card>
+          </DialogPanel>
+        </DialogPopup>
+      </Dialog>
 
-      {/* 4. APP PREFERENCES (LANGUAGE) MODAL */}
-      {activeModal === 'preferences' && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setActiveModal(null)} />
-          <div className="relative w-full max-w-md bg-white rounded-[2rem] shadow-2xl overflow-hidden flex flex-col p-6 animate-in slide-in-from-bottom sm:zoom-in-95 duration-300">
-            <div className="flex items-center justify-between mb-6 pb-2 border-b border-slate-100">
-              <h2 className="text-xl font-bold text-slate-900">App Preferences</h2>
-              <button onClick={() => setActiveModal(null)} className="p-2 text-slate-400 hover:bg-slate-50 rounded-full">
-                <X className="w-5 h-5" />
-              </button>
+      <Dialog open={activeModal === 'preferences'} onOpenChange={(o) => !o && setActiveModal(null)}>
+        <DialogPopup>
+          <DialogHeader>
+            <DialogTitle>App Preferences</DialogTitle>
+            <DialogDescription>Pick the language for your workspace.</DialogDescription>
+          </DialogHeader>
+          <DialogPanel>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                variant={!isAmharic ? 'default' : 'outline'}
+                onClick={() => {
+                  setIsAmharic(false);
+                  showToast('Language changed to English');
+                }}
+              >
+                English
+              </Button>
+              <Button
+                variant={isAmharic ? 'default' : 'outline'}
+                onClick={() => {
+                  setIsAmharic(true);
+                  showToast('ቋንቋው ወደ አማርኛ ተቀይሯል');
+                }}
+              >
+                አማርኛ
+              </Button>
             </div>
-
-            <div className="flex flex-col gap-4">
-              <div>
-                <h3 className="font-bold text-slate-900 text-sm mb-3">Language Selector</h3>
-                <div className="grid grid-cols-2 gap-3">
-                  <button 
-                    onClick={() => { setIsAmharic(false); showToast('Language changed to English'); }}
-                    className={`h-12 rounded-xl font-bold border-2 transition-all ${!isAmharic ? 'border-primary bg-primary/10 text-primary-dark' : 'border-slate-100 text-slate-500'}`}
-                  >
-                    English
-                  </button>
-                  <button 
-                    onClick={() => { setIsAmharic(true); showToast('ቋንቋው ወደ አማርኛ ተቀይሯል'); }}
-                    className={`h-12 rounded-xl font-bold border-2 transition-all ${isAmharic ? 'border-primary bg-primary/10 text-primary-dark' : 'border-slate-100 text-slate-500'}`}
-                  >
-                    አማርኛ (Amharic)
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+          </DialogPanel>
+        </DialogPopup>
+      </Dialog>
 
       <TrainerBottomNav />
     </div>

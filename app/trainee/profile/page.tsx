@@ -112,66 +112,65 @@ export default function TraineeProfilePage() {
   ];
 
   return (
-    <div className="flex min-h-[100dvh] w-full flex-col bg-background-light font-sans text-slate-900 pb-24">
+    <div className="flex min-h-[100dvh] w-full flex-col bg-background font-sans text-foreground pb-24">
       {/* Toast popup */}
       {toastMessage && (
-        <div className="fixed top-8 left-1/2 -translate-x-1/2 z-50 px-6 py-3.5 bg-slate-900/95 backdrop-blur-md border border-[#8DEC71]/30 text-white rounded-full text-sm font-bold shadow-xl animate-in fade-in slide-in-from-top duration-300">
+        <div className="fixed top-8 left-1/2 -translate-x-1/2 z-50 px-6 py-3.5 bg-card backdrop-blur-md border border-border text-foreground rounded-full text-sm font-bold shadow-xl animate-in fade-in slide-in-from-top duration-300">
           {toastMessage}
         </div>
       )}
 
-      <header className="px-6 pt-12 pb-6 bg-white border-b border-slate-100 mb-6 sticky top-0 z-10">
+      <header className="px-6 pt-12 pb-6 bg-card border-b border-border mb-6 sticky top-0 z-10">
         <h1 className="text-2xl font-bold tracking-tight">{isAmharic ? 'መገለጫ' : 'Profile'}</h1>
-        <p className="text-sm text-slate-500 font-medium mt-1">{isAmharic ? 'የመተግበሪያ ቅንብሮች ያቀናብሩ' : 'Manage your app settings'}</p>
+        <p className="text-sm text-muted-foreground font-medium mt-1">{isAmharic ? 'የመተግበሪያ ቅንብሮች ያቀናብሩ' : 'Manage your app settings'}</p>
       </header>
       <main className="px-6 flex-1 flex flex-col items-center">
         
         {/* PREMIUM UPGRADE CARD */}
-        <div className="w-full max-w-sm p-6 mb-8 rounded-3xl bg-gradient-to-tr from-slate-900 via-slate-800 to-indigo-950 text-white shadow-xl relative overflow-hidden border border-slate-800/80 hover:shadow-2xl hover:border-primary/50 transition-all duration-300 group">
-          <div className="absolute -top-12 -right-12 w-28 h-28 bg-primary/20 rounded-full blur-2xl group-hover:bg-primary/30 transition-all duration-500"></div>
-          <div className="absolute -bottom-12 -left-12 w-28 h-28 bg-sky-500/10 rounded-full blur-2xl"></div>
+        <div className="w-full max-w-sm p-6 mb-8 rounded-xl bg-card text-card-foreground shadow-[0_1px_0_0_var(--border)] relative overflow-hidden border border-border hover:shadow-md transition-all duration-300 group">
+          <div className="absolute -top-12 -right-12 w-28 h-28 bg-primary/10 rounded-full blur-2xl group-hover:bg-primary/20 transition-all duration-500"></div>
 
           <div className="flex items-center gap-2 mb-4">
-            <div className="bg-primary/20 p-2 rounded-xl text-primary flex items-center justify-center shadow-inner">
-              <Sparkles className="w-5 h-5 text-[#8DEC71]" />
+            <div className="bg-primary/10 p-2 rounded-xl text-primary flex items-center justify-center shadow-inner">
+              <Sparkles className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <span className="text-xs font-bold tracking-widest text-[#8DEC71] uppercase">{isAmharic ? 'ፕሪሚየም ዕቅድ' : 'PREMIUM PLAN'}</span>
+              <span className="text-xs font-bold tracking-widest text-primary uppercase">{isAmharic ? 'ፕሪሚየም ዕቅድ' : 'PREMIUM PLAN'}</span>
               <h2 className="text-xl font-black tracking-tight mt-0.5">{isAmharic ? 'አዲስ ፖልትሪ ፕሪሚየም' : 'Addis Poultry Premium'}</h2>
             </div>
           </div>
 
-          <p className="text-xs text-slate-300 font-medium mb-5 leading-relaxed">
+          <p className="text-xs text-muted-foreground font-medium mb-5 leading-relaxed">
             {isAmharic 
               ? 'ተጨማሪ የባለሙያ ምክሮችን እና ልዩ ስልጠናዎችን ለማግኘት አሁኑኑ ያሻሽሉ!' 
               : 'Upgrade today to unlock direct advice, customized tools, and standard premium courses!'}
           </p>
 
           <ul className="flex flex-col gap-2.5 mb-6">
-            <li className="flex items-center gap-2.5 text-xs text-slate-200 font-bold">
-              <CheckCircle2 className="w-4 h-4 text-[#8DEC71] shrink-0" />
+            <li className="flex items-center gap-2.5 text-xs text-muted-foreground font-bold">
+              <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
               <span>{isAmharic ? 'የባለሙያ የቪዲዮ ምክክር' : 'Direct advisory consultations'}</span>
             </li>
-            <li className="flex items-center gap-2.5 text-xs text-slate-200 font-bold">
-              <CheckCircle2 className="w-4 h-4 text-[#8DEC71] shrink-0" />
+            <li className="flex items-center gap-2.5 text-xs text-muted-foreground font-bold">
+              <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
               <span>{isAmharic ? 'ፕሪሚየም የአስተዳደር መመሪያዎች' : 'Premium brooding tutorials'}</span>
             </li>
-            <li className="flex items-center gap-2.5 text-xs text-slate-200 font-bold">
-              <CheckCircle2 className="w-4 h-4 text-[#8DEC71] shrink-0" />
+            <li className="flex items-center gap-2.5 text-xs text-muted-foreground font-bold">
+              <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
               <span>{isAmharic ? '24/7 ቀጥተኛ የድጋፍ መስመር' : '24/7 Priority support hotline'}</span>
             </li>
           </ul>
 
-          <div className="flex items-end justify-between border-t border-slate-800 pt-5">
+          <div className="flex items-end justify-between border-t border-border pt-5">
             <div>
-              <span className="text-[10px] text-slate-400 font-bold block tracking-wider uppercase">{isAmharic ? 'ዋጋ' : 'INVESTMENT'}</span>
-              <span className="text-2xl font-black tracking-tight text-white">1,000 ETB</span>
-              <span className="text-xs text-slate-400 font-bold"> / {isAmharic ? 'በወር' : 'mo'}</span>
+              <span className="text-[10px] text-muted-foreground font-bold block tracking-wider uppercase">{isAmharic ? 'ዋጋ' : 'INVESTMENT'}</span>
+              <span className="text-2xl font-black tracking-tight">1,000 ETB</span>
+              <span className="text-xs text-muted-foreground font-bold"> / {isAmharic ? 'በወር' : 'mo'}</span>
             </div>
             
             <button
               onClick={launchTelebirr}
-              className="py-3 px-5 rounded-2xl bg-gradient-to-r from-sky-500 via-blue-600 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 active:scale-[0.97] transition-all font-black text-xs text-white shadow-lg shadow-sky-500/25 flex items-center gap-2"
+              className="py-3 px-5 rounded-[var(--radius)] bg-primary hover:opacity-90 active:scale-[0.97] transition-all font-bold text-xs text-primary-foreground shadow-[0_1px_0_0_var(--border)] flex items-center gap-2"
             >
               <span>{isAmharic ? 'በቴሌብር ይክፈሉ' : 'Pay with Telebirr'}</span>
             </button>
@@ -180,22 +179,22 @@ export default function TraineeProfilePage() {
 
         <div className="w-full max-w-sm mb-8 flex flex-col gap-3">
           {navItems.map((item, idx) => (
-            <button key={idx} onClick={item.onClick} className="flex items-center gap-4 p-4 bg-white rounded-2xl border border-slate-100 hover:border-primary/50 transition-colors shadow-sm text-left">
-              <div className="size-10 rounded-full bg-slate-50 flex items-center justify-center shrink-0 border border-slate-100">
-                <item.icon className="w-5 h-5 text-slate-500" />
+            <button key={idx} onClick={item.onClick} className="flex items-center gap-4 p-4 bg-card rounded-2xl border border-border hover:border-primary/50 transition-colors shadow-sm text-left">
+              <div className="size-10 rounded-full bg-muted flex items-center justify-center shrink-0 border border-border">
+                <item.icon className="w-5 h-5 text-muted-foreground" />
               </div>
               <div className="flex-1">
-                <h3 className="font-bold text-slate-900 text-[15px]">{item.label}</h3>
-                <p className="text-xs text-slate-500 font-medium">{item.description}</p>
+                <h3 className="font-bold text-foreground text-[15px]">{item.label}</h3>
+                <p className="text-xs text-muted-foreground font-medium">{item.description}</p>
               </div>
-              <ChevronRight className="w-4 h-4 text-slate-300" />
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
             </button>
           ))}
         </div>
 
         <button 
           onClick={handleLogout}
-          className="flex w-full max-w-sm items-center justify-center gap-2 p-4 bg-white rounded-2xl border border-red-200 text-red-500 font-bold hover:bg-red-50 transition-colors shadow-sm"
+          className="flex w-full max-w-sm items-center justify-center gap-2 p-4 bg-card rounded-2xl border border-red-200 text-red-500 font-bold hover:bg-red-50 transition-colors shadow-sm"
         >
           <LogOut className="w-5 h-5" />
           {isAmharic ? 'ውጣ' : 'Log Out'}
@@ -207,50 +206,50 @@ export default function TraineeProfilePage() {
       {/* 1. PERSONAL INFO MODAL */}
       {activeModal === 'info' && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setActiveModal(null)} />
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setActiveModal(null)} />
           <form 
             onSubmit={handleSaveInfo}
-            className="relative w-full max-w-md bg-white rounded-[2rem] shadow-2xl overflow-hidden flex flex-col animate-in slide-in-from-bottom sm:zoom-in-95 duration-300 p-6 max-h-[85vh] overflow-y-auto"
+            className="relative w-full max-w-md bg-card rounded-[2rem] shadow-2xl overflow-hidden flex flex-col animate-in slide-in-from-bottom sm:zoom-in-95 duration-300 p-6 max-h-[85vh] overflow-y-auto"
           >
-            <div className="flex items-center justify-between mb-6 pb-2 border-b border-slate-100">
-              <h2 className="text-xl font-bold text-slate-900">{isAmharic ? 'የግል መረጃን ማስተካከል' : 'Personal Info'}</h2>
-              <button type="button" onClick={() => setActiveModal(null)} className="p-2 text-slate-400 hover:bg-slate-50 rounded-full">
+            <div className="flex items-center justify-between mb-6 pb-2 border-b border-border">
+              <h2 className="text-xl font-bold text-foreground">{isAmharic ? 'የግል መረጃን ማስተካከል' : 'Personal Info'}</h2>
+              <button type="button" onClick={() => setActiveModal(null)} className="p-2 text-muted-foreground hover:bg-muted rounded-full">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="flex flex-col gap-4">
               <div>
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5 block">{isAmharic ? 'ሙሉ ስም' : 'Full Name'}</label>
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-1.5 block">{isAmharic ? 'ሙሉ ስም' : 'Full Name'}</label>
                 <input 
                   type="text"
                   required
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
-                  className="w-full h-12 px-4 rounded-xl border border-slate-200 font-medium text-slate-900 focus:border-primary focus:outline-none bg-slate-50/50"
+                  className="w-full h-12 px-4 rounded-xl border border-border font-medium text-foreground focus:border-primary focus:outline-none bg-muted/50"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5 block">{isAmharic ? 'የትኩረት አቅጣጫ' : 'Focus Area'}</label>
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-1.5 block">{isAmharic ? 'የትኩረት አቅጣጫ' : 'Focus Area'}</label>
                 <input 
                   type="text"
                   value={focusArea}
                   onChange={(e) => setFocusArea(e.target.value)}
-                  className="w-full h-12 px-4 rounded-xl border border-slate-200 font-medium text-slate-900 focus:border-primary focus:outline-none bg-slate-50/50"
+                  className="w-full h-12 px-4 rounded-xl border border-border font-medium text-foreground focus:border-primary focus:outline-none bg-muted/50"
                   placeholder="e.g. Broilers, Layers, General"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5 block">{isAmharic ? 'አካባቢ' : 'Location'}</label>
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-1.5 block">{isAmharic ? 'አካባቢ' : 'Location'}</label>
                 <div className="relative">
-                  <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <input 
                     type="text"
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
-                    className="w-full h-12 pl-11 pr-4 rounded-xl border border-slate-200 font-medium text-slate-900 focus:border-primary focus:outline-none bg-slate-50/50"
+                    className="w-full h-12 pl-11 pr-4 rounded-xl border border-border font-medium text-foreground focus:border-primary focus:outline-none bg-muted/50"
                     placeholder="City / Region"
                   />
                 </div>
@@ -258,27 +257,27 @@ export default function TraineeProfilePage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5 block">{isAmharic ? 'የእርሻ መጠን' : 'Farm Size'}</label>
+                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-1.5 block">{isAmharic ? 'የእርሻ መጠን' : 'Farm Size'}</label>
                   <div className="relative">
-                    <Scale className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Scale className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <input 
                       type="text"
                       value={farmSize}
                       onChange={(e) => setFarmSize(e.target.value)}
-                      className="w-full h-12 pl-11 pr-4 rounded-xl border border-slate-200 font-medium text-slate-900 focus:border-primary focus:outline-none bg-slate-50/50"
+                      className="w-full h-12 pl-11 pr-4 rounded-xl border border-border font-medium text-foreground focus:border-primary focus:outline-none bg-muted/50"
                       placeholder="e.g. 1.5 Acres"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5 block">{isAmharic ? 'የዶሮዎች ብዛት' : 'Flock Count'}</label>
+                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-1.5 block">{isAmharic ? 'የዶሮዎች ብዛት' : 'Flock Count'}</label>
                   <input 
                     type="number"
                     min="0"
                     value={flockCount}
                     onChange={(e) => setFlockCount(Number(e.target.value))}
-                    className="w-full h-12 px-4 rounded-xl border border-slate-200 font-medium text-slate-900 focus:border-primary focus:outline-none bg-slate-50/50"
+                    className="w-full h-12 px-4 rounded-xl border border-border font-medium text-foreground focus:border-primary focus:outline-none bg-muted/50"
                   />
                 </div>
               </div>
@@ -287,7 +286,7 @@ export default function TraineeProfilePage() {
             <button 
               type="submit"
               disabled={updating}
-              className="mt-8 w-full h-14 bg-primary text-primary-dark font-bold rounded-full transition-transform active:scale-[0.98] flex items-center justify-center disabled:opacity-50"
+              className="mt-8 w-full h-14 bg-primary text-primary-foreground font-bold rounded-full transition-transform active:scale-[0.98] flex items-center justify-center disabled:opacity-50"
             >
               {updating ? 'Saving...' : (isAmharic ? 'መረጃውን አስቀምጥ' : 'Save Changes')}
             </button>
@@ -298,14 +297,14 @@ export default function TraineeProfilePage() {
       {/* 2. NOTIFICATIONS MODAL */}
       {activeModal === 'notifications' && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setActiveModal(null)} />
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setActiveModal(null)} />
           <form 
             onSubmit={handleSaveNotifications}
-            className="relative w-full max-w-md bg-white rounded-[2rem] shadow-2xl overflow-hidden flex flex-col p-6 animate-in slide-in-from-bottom sm:zoom-in-95 duration-300"
+            className="relative w-full max-w-md bg-card rounded-[2rem] shadow-2xl overflow-hidden flex flex-col p-6 animate-in slide-in-from-bottom sm:zoom-in-95 duration-300"
           >
-            <div className="flex items-center justify-between mb-6 pb-2 border-b border-slate-100">
-              <h2 className="text-xl font-bold text-slate-900">{isAmharic ? 'የማሳወቂያ ቅንብሮች' : 'Alert Preferences'}</h2>
-              <button type="button" onClick={() => setActiveModal(null)} className="p-2 text-slate-400 hover:bg-slate-50 rounded-full">
+            <div className="flex items-center justify-between mb-6 pb-2 border-b border-border">
+              <h2 className="text-xl font-bold text-foreground">{isAmharic ? 'የማሳወቂያ ቅንብሮች' : 'Alert Preferences'}</h2>
+              <button type="button" onClick={() => setActiveModal(null)} className="p-2 text-muted-foreground hover:bg-muted rounded-full">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -313,13 +312,13 @@ export default function TraineeProfilePage() {
             <div className="flex flex-col gap-5 my-2">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-bold text-slate-900 text-sm">{isAmharic ? 'ፈጣን ማሳወቂያዎች' : 'Push Notifications'}</h3>
-                  <p className="text-xs text-slate-500 font-medium">{isAmharic ? 'ለአሰልጣኝ መልእክቶች' : 'Immediate response alerts'}</p>
+                  <h3 className="font-bold text-foreground text-sm">{isAmharic ? 'ፈጣን ማሳወቂያዎች' : 'Push Notifications'}</h3>
+                  <p className="text-xs text-muted-foreground font-medium">{isAmharic ? 'ለአሰልጣኝ መልእክቶች' : 'Immediate response alerts'}</p>
                 </div>
                 <button 
                   type="button"
                   onClick={() => setPrefPush(!prefPush)}
-                  className={`w-12 h-7 flex items-center rounded-full transition-colors duration-300 p-1 cursor-pointer outline-none ${prefPush ? 'bg-primary' : 'bg-slate-200'}`}
+                  className={`w-12 h-7 flex items-center rounded-full transition-colors duration-300 p-1 cursor-pointer outline-none ${prefPush ? 'bg-primary' : 'bg-input'}`}
                 >
                   <div className={`size-5 bg-white rounded-full shadow-md transform transition-transform duration-300 ${prefPush ? 'translate-x-5' : 'translate-x-0'}`}></div>
                 </button>
@@ -327,13 +326,13 @@ export default function TraineeProfilePage() {
 
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-bold text-slate-900 text-sm">{isAmharic ? 'የኤስኤምኤስ መልእክቶች' : 'SMS Inquiry Updates'}</h3>
-                  <p className="text-xs text-slate-500 font-medium">{isAmharic ? 'በስልክዎ አጭር ፅሁፍ' : 'Inquiry status texts'}</p>
+                  <h3 className="font-bold text-foreground text-sm">{isAmharic ? 'የኤስኤምኤስ መልእክቶች' : 'SMS Inquiry Updates'}</h3>
+                  <p className="text-xs text-muted-foreground font-medium">{isAmharic ? 'በስልክዎ አጭር ፅሁፍ' : 'Inquiry status texts'}</p>
                 </div>
                 <button 
                   type="button"
                   onClick={() => setPrefSMS(!prefSMS)}
-                  className={`w-12 h-7 flex items-center rounded-full transition-colors duration-300 p-1 cursor-pointer outline-none ${prefSMS ? 'bg-primary' : 'bg-slate-200'}`}
+                  className={`w-12 h-7 flex items-center rounded-full transition-colors duration-300 p-1 cursor-pointer outline-none ${prefSMS ? 'bg-primary' : 'bg-input'}`}
                 >
                   <div className={`size-5 bg-white rounded-full shadow-md transform transition-transform duration-300 ${prefSMS ? 'translate-x-5' : 'translate-x-0'}`}></div>
                 </button>
@@ -341,13 +340,13 @@ export default function TraineeProfilePage() {
 
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-bold text-slate-900 text-sm">{isAmharic ? 'ሳምንታዊ ሪፖርቶች' : 'Weekly Performance Reports'}</h3>
-                  <p className="text-xs text-slate-500 font-medium">{isAmharic ? 'የእርሻ አስተዳደር ምክሮች' : 'Brooding efficiency metrics'}</p>
+                  <h3 className="font-bold text-foreground text-sm">{isAmharic ? 'ሳምንታዊ ሪፖርቶች' : 'Weekly Performance Reports'}</h3>
+                  <p className="text-xs text-muted-foreground font-medium">{isAmharic ? 'የእርሻ አስተዳደር ምክሮች' : 'Brooding efficiency metrics'}</p>
                 </div>
                 <button 
                   type="button"
                   onClick={() => setPrefWeekly(!prefWeekly)}
-                  className={`w-12 h-7 flex items-center rounded-full transition-colors duration-300 p-1 cursor-pointer outline-none ${prefWeekly ? 'bg-primary' : 'bg-slate-200'}`}
+                  className={`w-12 h-7 flex items-center rounded-full transition-colors duration-300 p-1 cursor-pointer outline-none ${prefWeekly ? 'bg-primary' : 'bg-input'}`}
                 >
                   <div className={`size-5 bg-white rounded-full shadow-md transform transition-transform duration-300 ${prefWeekly ? 'translate-x-5' : 'translate-x-0'}`}></div>
                 </button>
@@ -356,7 +355,7 @@ export default function TraineeProfilePage() {
 
             <button 
               type="submit"
-              className="mt-8 w-full h-14 bg-primary text-primary-dark font-bold rounded-full transition-transform active:scale-[0.98]"
+              className="mt-8 w-full h-14 bg-primary text-primary-foreground font-bold rounded-full transition-transform active:scale-[0.98]"
             >
               {isAmharic ? 'አስቀምጥ' : 'Save Preferences'}
             </button>
@@ -367,40 +366,40 @@ export default function TraineeProfilePage() {
       {/* 3. HELP & SUPPORT MODAL */}
       {activeModal === 'help' && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setActiveModal(null)} />
-          <div className="relative w-full max-w-md bg-white rounded-[2rem] shadow-2xl overflow-hidden flex flex-col p-6 animate-in slide-in-from-bottom sm:zoom-in-95 duration-300 max-h-[80vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6 pb-2 border-b border-slate-100">
-              <h2 className="text-xl font-bold text-slate-900">{isAmharic ? 'እርዳታ እና ድጋፍ' : 'Help & Support'}</h2>
-              <button onClick={() => setActiveModal(null)} className="p-2 text-slate-400 hover:bg-slate-50 rounded-full">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setActiveModal(null)} />
+          <div className="relative w-full max-w-md bg-card rounded-[2rem] shadow-2xl overflow-hidden flex flex-col p-6 animate-in slide-in-from-bottom sm:zoom-in-95 duration-300 max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6 pb-2 border-b border-border">
+              <h2 className="text-xl font-bold text-foreground">{isAmharic ? 'እርዳታ እና ድጋፍ' : 'Help & Support'}</h2>
+              <button onClick={() => setActiveModal(null)} className="p-2 text-muted-foreground hover:bg-muted rounded-full">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="flex flex-col gap-4">
-              <div className="bg-slate-50 p-4 rounded-2xl">
-                <h4 className="font-bold text-slate-900 text-sm mb-1">How do I submit video inquiries?</h4>
-                <p className="text-xs text-slate-600 leading-relaxed font-medium">
+              <div className="bg-muted p-4 rounded-2xl">
+                <h4 className="font-bold text-foreground text-sm mb-1">How do I submit video inquiries?</h4>
+                <p className="text-xs text-muted-foreground leading-relaxed font-medium">
                   Go to Home, write a description, tap the &quot;Video&quot; button to select a clip under 60 seconds, and tap &quot;Send to Trainer&quot;. We will compress and upload it to our secure R2 bucket.
                 </p>
               </div>
 
-              <div className="bg-slate-50 p-4 rounded-2xl">
-                <h4 className="font-bold text-slate-900 text-sm mb-1">How do I contact my trainer directly?</h4>
-                <p className="text-xs text-slate-600 leading-relaxed font-medium">
+              <div className="bg-muted p-4 rounded-2xl">
+                <h4 className="font-bold text-foreground text-sm mb-1">How do I contact my trainer directly?</h4>
+                <p className="text-xs text-muted-foreground leading-relaxed font-medium">
                   Tap the green chat button in the center of the bottom navigation bar to open the direct message feed with your assigned trainer.
                 </p>
               </div>
 
-              <div className="bg-slate-50 p-4 rounded-2xl">
-                <h4 className="font-bold text-slate-900 text-sm mb-1">What does Premium plan offer?</h4>
-                <p className="text-xs text-slate-600 leading-relaxed font-medium">
+              <div className="bg-muted p-4 rounded-2xl">
+                <h4 className="font-bold text-foreground text-sm mb-1">What does Premium plan offer?</h4>
+                <p className="text-xs text-muted-foreground leading-relaxed font-medium">
                   Premium provides priority advisory support, video consultations, and premium brooding spreadsheets. Upgrades are processed securely through Telebirr.
                 </p>
               </div>
 
               <a 
                 href="tel:+251911223344"
-                className="mt-4 w-full h-14 border-2 border-primary hover:bg-primary/5 text-primary-dark font-bold rounded-full flex items-center justify-center gap-2 text-sm transition-all"
+                className="mt-4 w-full h-14 border-2 border-primary hover:bg-primary/5 text-primary-foreground font-bold rounded-full flex items-center justify-center gap-2 text-sm transition-all"
               >
                 <Phone className="w-4 h-4" />
                 <span>{isAmharic ? 'ስልክ በመደወል ድጋፍ ያግኙ' : 'Call Support Line'}</span>
@@ -411,7 +410,7 @@ export default function TraineeProfilePage() {
       )}
 
       {profile && (
-        <p className="text-xs text-slate-400 mt-8 font-medium text-center">
+        <p className="text-xs text-muted-foreground mt-8 font-medium text-center">
           {isAmharic ? 'በዚህ ገብተዋል፡' : 'Logged in as'} {profile.email || profile.phoneNumber}
         </p>
       )}

@@ -4,11 +4,18 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { format } from 'date-fns';
-import { Bell, CheckCircle2, Loader2, Mic, Send, Square, Trash2, Video } from 'lucide-react';
+import { Bell, Mic, Square, Trash2, Video } from 'lucide-react';
 import { TrainerBottomNav } from '@/components/TrainerBottomNav';
 import { useAuthStore } from '@/lib/store';
 import { createClient } from '@/lib/supabase/client';
 import { resolveApiUrl } from '@/lib/api-helper';
+import { Button } from '@/components/ui/button';
+import { Card, CardPanel } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
+import { Empty, EmptyTitle, EmptyDescription } from '@/components/ui/empty';
+import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 
 interface InquiryRecord {
   id: string;
@@ -34,13 +41,8 @@ async function findOrCreateChat(supabase: ReturnType<typeof createClient>, userI
     .from('chat_participants')
     .select('chat_id')
     .eq('user_id', userId);
-
-  if (myChatsError) {
-    throw new Error(myChatsError.message);
-  }
-
+  if (myChatsError) throw new Error(myChatsError.message);
   const chatIds = myChats?.map((chat) => chat.chat_id) ?? [];
-
   if (chatIds.length > 0) {
     const { data: existingChat, error: existingChatError } = await supabase
       .from('chat_participants')
@@ -48,35 +50,16 @@ async function findOrCreateChat(supabase: ReturnType<typeof createClient>, userI
       .eq('user_id', peerId)
       .in('chat_id', chatIds)
       .maybeSingle();
-
-    if (existingChatError) {
-      throw new Error(existingChatError.message);
-    }
-
-    if (existingChat) {
-      return existingChat.chat_id as string;
-    }
+    if (existingChatError) throw new Error(existingChatError.message);
+    if (existingChat) return existingChat.chat_id as string;
   }
-
-  const { data: newChat, error: chatError } = await supabase
-    .from('chats')
-    .insert({})
-    .select('id')
-    .single();
-
-  if (chatError || !newChat) {
-    throw new Error(chatError?.message || 'Could not create trainer chat.');
-  }
-
+  const { data: newChat, error: chatError } = await supabase.from('chats').insert({}).select('id').single();
+  if (chatError || !newChat) throw new Error(chatError?.message || 'Could not create trainer chat.');
   const { error: participantsError } = await supabase.from('chat_participants').insert([
     { chat_id: newChat.id, user_id: userId },
     { chat_id: newChat.id, user_id: peerId },
   ]);
-
-  if (participantsError) {
-    throw new Error(participantsError.message);
-  }
-
+  if (participantsError) throw new Error(participantsError.message);
   return newChat.id as string;
 }
 
@@ -101,7 +84,6 @@ export default function AlertsPage() {
       setLoading(false);
       return;
     }
-
     if (profile.role !== 'trainer') {
       router.push('/trainee');
       return;
@@ -114,37 +96,26 @@ export default function AlertsPage() {
         .select('*')
         .eq('trainer_id', profile.uid)
         .order('created_at', { ascending: false });
-
       if (error) {
         console.error('Could not load inquiries', error);
         setLoading(false);
         return;
       }
-
       if (data) {
         setInquiries(data as InquiryRecord[]);
         setSelectedInquiryId((current) => current ?? data[0]?.id ?? null);
       }
-
       setLoading(false);
     };
 
     const supabase = createClient();
-
     fetchInquiries();
     const channel = supabase
       .channel(`trainer_inquiries:${profile.uid}`)
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'inquiries',
-          filter: `trainer_id=eq.${profile.uid}`,
-        },
-        () => {
-          fetchInquiries();
-        }
+        { event: '*', schema: 'public', table: 'inquiries', filter: `trainer_id=eq.${profile.uid}` },
+        () => fetchInquiries()
       )
       .subscribe();
 
@@ -162,9 +133,7 @@ export default function AlertsPage() {
     setResponseText(selectedInquiry?.response || '');
     setResponseAudioBlob(null);
     setResponseAudioUrl((current) => {
-      if (current) {
-        URL.revokeObjectURL(current);
-      }
+      if (current) URL.revokeObjectURL(current);
       return null;
     });
   }, [selectedInquiryId]);
@@ -175,25 +144,18 @@ export default function AlertsPage() {
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
-
       mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
+        if (event.data.size > 0) audioChunksRef.current.push(event.data);
       };
-
       mediaRecorder.onstop = () => {
         const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         const url = URL.createObjectURL(blob);
         setResponseAudioBlob(blob);
         setResponseAudioUrl((current) => {
-          if (current) {
-            URL.revokeObjectURL(current);
-          }
+          if (current) URL.revokeObjectURL(current);
           return url;
         });
       };
-
       mediaRecorder.start();
       setIsRecording(true);
     } catch (error) {
@@ -212,26 +174,17 @@ export default function AlertsPage() {
   const clearResponseAudio = () => {
     setResponseAudioBlob(null);
     setResponseAudioUrl((current) => {
-      if (current) {
-        URL.revokeObjectURL(current);
-      }
+      if (current) URL.revokeObjectURL(current);
       return null;
     });
   };
 
   const handleSubmitResponse = async () => {
-    if (!selectedInquiry || !profile) {
-      return;
-    }
-
-    if (!responseText.trim() && !responseAudioBlob) {
-      return;
-    }
-
+    if (!selectedInquiry || !profile) return;
+    if (!responseText.trim() && !responseAudioBlob) return;
     try {
       setSaving(true);
       let responseAudioBase64 = selectedInquiry.response_audio_url;
-
       if (responseAudioBlob) {
         responseAudioBase64 = (await new Promise<string>((resolve) => {
           const reader = new FileReader();
@@ -239,7 +192,6 @@ export default function AlertsPage() {
           reader.readAsDataURL(responseAudioBlob);
         })) as string;
       }
-
       const supabase = createClient();
       const { error } = await supabase
         .from('inquiries')
@@ -251,16 +203,11 @@ export default function AlertsPage() {
         })
         .eq('id', selectedInquiry.id)
         .eq('trainer_id', profile.uid);
+      if (error) throw new Error(error.message || 'Could not send response.');
 
-      if (error) {
-        throw new Error(error.message || 'Could not send response.');
-      }
-
-      // Auto-insert message reply into the chat thread
       try {
         const chatId = await findOrCreateChat(supabase, selectedInquiry.trainee_id, profile.uid);
         const responseMsgText = responseText.trim() || 'Sent an audio reply';
-
         await supabase.from('messages').insert({
           chat_id: chatId,
           sender_id: profile.uid,
@@ -268,13 +215,9 @@ export default function AlertsPage() {
           audio_url: responseAudioBase64 || null,
           inquiry_id: selectedInquiry.id,
         });
-
         await supabase
           .from('chats')
-          .update({
-            last_message: responseMsgText,
-            last_message_time: new Date().toISOString(),
-          })
+          .update({ last_message: responseMsgText, last_message_time: new Date().toISOString() })
           .eq('id', chatId);
       } catch (chatErr) {
         console.error('Error auto-sending inquiry response message to chat:', chatErr);
@@ -293,7 +236,6 @@ export default function AlertsPage() {
             : inquiry
         )
       );
-
       clearResponseAudio();
     } catch (error) {
       console.error('Could not send response', error);
@@ -302,175 +244,176 @@ export default function AlertsPage() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex min-h-[100dvh] items-center justify-center bg-background-light">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
+  // Shell-first: header + nav render instantly, inquiry list shimmers while loading.
   return (
-    <div className="flex min-h-[100dvh] w-full flex-col bg-background-light font-sans text-slate-900 pb-24">
-      <header className="px-6 pt-12 pb-6 bg-white border-b border-slate-100 mb-6 sticky top-0 z-10">
-        <h1 className="text-2xl font-bold tracking-tight">Inquiry Alerts</h1>
-        <p className="text-sm text-slate-500 font-medium mt-1">Review trainee issues, media, and respond.</p>
+    <div className="flex min-h-svh w-full flex-col bg-background font-sans text-foreground pb-24">
+      <header className="sticky top-0 z-10 border-b border-border bg-card px-6 pb-6 pt-10">
+        <h1 className="font-heading text-2xl font-bold tracking-tight">Inquiry Alerts</h1>
+        <p className="mt-1 text-sm font-medium text-muted-foreground">Review trainee issues, media, and respond.</p>
       </header>
 
-      <main className="px-6 flex-1 flex flex-col gap-6">
-        {inquiries.length === 0 ? (
-          <div className="py-12 flex flex-col items-center justify-center text-center max-w-sm mx-auto">
-            <div className="size-20 bg-slate-100 rounded-full flex items-center justify-center mb-4 border border-slate-200">
-              <Bell className="w-10 h-10 text-slate-400" />
-            </div>
-            <h3 className="text-lg font-bold text-slate-900 mb-2">No inquiries yet</h3>
-            <p className="text-sm text-slate-500 max-w-[240px] leading-relaxed">
-              Trainee questions will appear here when they need your help.
-            </p>
+      <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 px-6 pt-6" aria-busy={loading}>
+        {loading ? (
+          <div className="flex flex-col gap-2" role="status" aria-label="Loading inquiries">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="rounded-xl border border-border bg-card p-4">
+                <Skeleton className="h-4 w-1/3" />
+                <Skeleton className="mt-2 h-3 w-full" />
+                <Skeleton className="mt-1.5 h-3 w-2/3" />
+              </div>
+            ))}
           </div>
+        ) : inquiries.length === 0 ? (
+          <Empty>
+            <span className="flex size-14 items-center justify-center rounded-full bg-muted text-muted-foreground">
+              <Bell className="size-7" />
+            </span>
+            <EmptyTitle>No inquiries yet</EmptyTitle>
+            <EmptyDescription>Trainee questions will appear here when they need your help.</EmptyDescription>
+          </Empty>
         ) : (
           <>
-            <section className="flex flex-col gap-3">
+            <ul className="flex flex-col gap-2">
               {inquiries.map((inquiry) => (
-                <button
-                  key={inquiry.id}
-                  type="button"
-                  onClick={() => setSelectedInquiryId(inquiry.id)}
-                  className={`rounded-3xl border p-4 text-left shadow-sm transition-colors ${
-                    selectedInquiryId === inquiry.id
-                      ? 'border-primary bg-[#F6FFF2]'
-                      : 'border-slate-100 bg-white hover:border-slate-200'
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-bold text-slate-900">{inquiry.trainee_name}</p>
-                      <p className="mt-1 text-sm text-slate-500 line-clamp-2">{inquiry.message}</p>
-                    </div>
-                    <div className="flex flex-col items-end gap-2">
-                      <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide ${inquiry.urgency === 'High' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-500'}`}>
-                        {inquiry.urgency}
-                      </span>
-                      <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide ${inquiry.status === 'responded' ? 'bg-[#E5F5E5] text-primary-dark' : 'bg-[#FFF4E5] text-[#B76E00]'}`}>
-                        {inquiry.status}
-                      </span>
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </section>
-
-            {selectedInquiry && (
-              <section className="rounded-[2rem] border border-slate-100 bg-white p-5 shadow-sm">
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <h2 className="text-xl font-bold text-slate-900">{selectedInquiry.trainee_name}</h2>
-                    <p className="text-sm font-medium text-slate-500">
-                      {format(new Date(selectedInquiry.created_at), 'MMM d, yyyy h:mm a')}
-                    </p>
-                  </div>
-                  {selectedInquiry.status === 'responded' && (
-                    <div className="inline-flex items-center gap-2 rounded-full bg-[#E5F5E5] px-3 py-1 text-xs font-bold text-primary-dark">
-                      <CheckCircle2 className="h-4 w-4" />
-                      <span>Responded</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="mt-5 rounded-3xl bg-slate-50 p-4">
-                  <p className="text-sm font-bold uppercase tracking-wide text-slate-400">Inquiry</p>
-                  <p className="mt-2 text-base leading-relaxed text-slate-800">{selectedInquiry.message}</p>
-                </div>
-
-                {(selectedInquiry.image || selectedInquiry.audio_url || selectedInquiry.video_object_key) && (
-                  <div className="mt-5 flex flex-col gap-4">
-                    <p className="text-sm font-bold uppercase tracking-wide text-slate-400">Attachments</p>
-
-                    {selectedInquiry.image && (
-                      <div className="overflow-hidden rounded-3xl border border-slate-100">
-                        <Image src={selectedInquiry.image} alt="Inquiry attachment" width={640} height={640} loading="lazy" className="h-auto w-full object-cover" />
-                      </div>
-                    )}
-
-                    {selectedInquiry.audio_url && (
-                      <div className="rounded-3xl border border-slate-100 bg-slate-50 p-3">
-                        <audio src={selectedInquiry.audio_url} controls preload="none" className="w-full" />
-                      </div>
-                    )}
-
-                    {selectedInquiry.video_object_key && selectedInquiry.video_status !== 'expired' && (
-                      <div className="rounded-3xl border border-slate-100 bg-slate-50 p-3">
-                        <div className="mb-2 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-slate-500">
-                          <Video className="h-4 w-4" />
-                          <span>Video attachment</span>
-                        </div>
-                        <video
-                          key={selectedInquiry.id}
-                          controls
-                          preload="none"
-                          className="w-full rounded-2xl bg-black"
-                          src={resolveApiUrl(`/api/inquiries/${selectedInquiry.id}/video`)}
-                        />
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                <div className="mt-6 flex flex-col gap-3">
-                  <label className="text-sm font-bold uppercase tracking-wide text-slate-400">Your response</label>
-                  <textarea
-                    value={responseText}
-                    onChange={(event) => setResponseText(event.target.value)}
-                    placeholder="Type your response to the trainee..."
-                    className="min-h-[140px] rounded-3xl border-2 border-slate-100 bg-white p-4 font-medium text-slate-900 outline-none focus:border-primary"
-                  />
-
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={isRecording ? stopRecording : startRecording}
-                      className={`inline-flex items-center gap-2 rounded-full px-4 py-3 text-sm font-bold transition-colors ${isRecording ? 'bg-red-50 text-red-600' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-                    >
-                      {isRecording ? <Square className="h-4 w-4 fill-current" /> : <Mic className="h-4 w-4" />}
-                      <span>{isRecording ? 'Stop audio' : 'Record audio reply'}</span>
-                    </button>
-
-                    {responseAudioUrl && (
-                      <button
-                        type="button"
-                        onClick={clearResponseAudio}
-                        className="inline-flex items-center gap-2 rounded-full bg-red-50 px-4 py-3 text-sm font-bold text-red-600"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        <span>Remove audio</span>
-                      </button>
-                    )}
-                  </div>
-
-                  {responseAudioUrl && (
-                    <div className="rounded-3xl border border-slate-100 bg-slate-50 p-3">
-                      <audio src={responseAudioUrl} controls className="w-full" />
-                    </div>
-                  )}
-
-                  {selectedInquiry.response_audio_url && !responseAudioUrl && (
-                    <div className="rounded-3xl border border-slate-100 bg-slate-50 p-3">
-                      <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">Current audio reply</p>
-                      <audio src={selectedInquiry.response_audio_url} controls className="w-full" />
-                    </div>
-                  )}
-
+                <li key={inquiry.id}>
                   <button
                     type="button"
-                    disabled={saving || (!responseText.trim() && !responseAudioBlob)}
-                    onClick={handleSubmitResponse}
-                    className="mt-2 inline-flex h-14 items-center justify-center gap-2 rounded-full bg-primary px-5 text-base font-bold text-primary-dark transition-colors hover:bg-[#7ED465] disabled:opacity-60"
+                    onClick={() => setSelectedInquiryId(inquiry.id)}
+                    aria-pressed={selectedInquiryId === inquiry.id}
+                    className={cn(
+                      'w-full rounded-xl border p-4 text-left shadow-[0_1px_0_0_var(--border)] transition-colors',
+                      selectedInquiryId === inquiry.id
+                        ? 'border-ring bg-primary/5'
+                        : 'border-border bg-card hover:bg-accent/50'
+                    )}
                   >
-                    {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
-                    <span>{saving ? 'Sending...' : 'Send response'}</span>
+                    <span className="flex items-start justify-between gap-3">
+                      <span>
+                        <span className="block font-semibold">{inquiry.trainee_name}</span>
+                        <span className="mt-1 line-clamp-2 block text-sm text-muted-foreground">{inquiry.message}</span>
+                      </span>
+                      <span className="flex shrink-0 flex-col items-end gap-1.5">
+                        <Badge variant={inquiry.urgency === 'High' ? 'destructive' : 'secondary'} size="sm">
+                          {inquiry.urgency}
+                        </Badge>
+                        <Badge variant={inquiry.status === 'responded' ? 'success' : 'warning'} size="sm">
+                          {inquiry.status}
+                        </Badge>
+                      </span>
+                    </span>
                   </button>
-                </div>
-              </section>
+                </li>
+              ))}
+            </ul>
+
+            {selectedInquiry && (
+              <Card>
+                <CardPanel className="flex flex-col gap-4 p-5">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <h2 className="font-heading text-lg font-bold">{selectedInquiry.trainee_name}</h2>
+                      <p className="text-sm text-muted-foreground">
+                        {format(new Date(selectedInquiry.created_at), 'MMM d, yyyy h:mm a')}
+                      </p>
+                    </div>
+                    {selectedInquiry.status === 'responded' && <Badge variant="success">Responded</Badge>}
+                  </div>
+
+                  <div className="rounded-xl bg-muted p-4">
+                    <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Inquiry</p>
+                    <p className="mt-1.5 text-[15px] leading-relaxed">{selectedInquiry.message}</p>
+                  </div>
+
+                  {(selectedInquiry.image || selectedInquiry.audio_url || selectedInquiry.video_object_key) && (
+                    <div className="flex flex-col gap-3">
+                      <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Attachments</p>
+                      {selectedInquiry.image && (
+                        <span className="block overflow-hidden rounded-xl border border-border">
+                          <Image
+                            src={selectedInquiry.image}
+                            alt="Inquiry attachment"
+                            width={640}
+                            height={640}
+                            loading="lazy"
+                            className="h-auto w-full object-cover"
+                          />
+                        </span>
+                      )}
+                      {selectedInquiry.audio_url && (
+                        <div className="rounded-xl border border-border bg-muted p-3">
+                          <audio src={selectedInquiry.audio_url} controls preload="none" className="w-full" />
+                        </div>
+                      )}
+                      {selectedInquiry.video_object_key && selectedInquiry.video_status !== 'expired' && (
+                        <div className="rounded-xl border border-border bg-muted p-3">
+                          <p className="mb-2 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                            <Video className="size-4" />
+                            Video attachment
+                          </p>
+                          <video
+                            key={selectedInquiry.id}
+                            controls
+                            preload="none"
+                            className="w-full rounded-lg bg-black"
+                            src={resolveApiUrl(`/api/inquiries/${selectedInquiry.id}/video`)}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex flex-col gap-3">
+                    <label htmlFor="trainer-response" className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                      Your response
+                    </label>
+                    <Textarea
+                      id="trainer-response"
+                      value={responseText}
+                      onChange={(event) => setResponseText(event.target.value)}
+                      placeholder="Type your response to the trainee..."
+                    />
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        type="button"
+                        variant={isRecording ? 'destructive' : 'secondary'}
+                        size="sm"
+                        onClick={isRecording ? stopRecording : startRecording}
+                      >
+                        {isRecording ? <Square className="size-4 fill-current" /> : <Mic className="size-4" />}
+                        {isRecording ? 'Stop audio' : 'Record audio reply'}
+                      </Button>
+                      {responseAudioUrl && (
+                        <Button type="button" variant="destructive-outline" size="sm" onClick={clearResponseAudio}>
+                          <Trash2 className="size-4" />
+                          Remove audio
+                        </Button>
+                      )}
+                    </div>
+                    {responseAudioUrl && (
+                      <div className="rounded-xl border border-border bg-muted p-3">
+                        <audio src={responseAudioUrl} controls className="w-full" />
+                      </div>
+                    )}
+                    {selectedInquiry.response_audio_url && !responseAudioUrl && (
+                      <div className="rounded-xl border border-border bg-muted p-3">
+                        <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                          Current audio reply
+                        </p>
+                        <audio src={selectedInquiry.response_audio_url} controls className="w-full" />
+                      </div>
+                    )}
+                    <Button
+                      type="button"
+                      size="lg"
+                      loading={saving}
+                      disabled={!responseText.trim() && !responseAudioBlob}
+                      onClick={handleSubmitResponse}
+                    >
+                      {saving ? 'Sending...' : 'Send response'}
+                    </Button>
+                  </div>
+                </CardPanel>
+              </Card>
             )}
           </>
         )}

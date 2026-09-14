@@ -111,3 +111,14 @@ export async function countTraineesForTrainer(trainerId: string) {
     .eq('assigned_trainer_id', trainerId)
   return count ?? 0
 }
+
+/** Live display names of trainees assigned to a trainer (no hardcoded names). */
+export async function listTraineesForTrainer(trainerId: string) {
+  const { data } = await admin()
+    .from('profiles')
+    .select('id, display_name')
+    .eq('role', 'trainee')
+    .eq('assigned_trainer_id', trainerId)
+    .order('display_name')
+  return data ?? []
+}

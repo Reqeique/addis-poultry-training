@@ -1,26 +1,33 @@
-import type {Metadata} from 'next';
-import './globals.css'; // Global styles
+import type { Metadata } from 'next';
+import './globals.css'; // Global styles (coss ui design tokens)
 import { AuthProvider } from '@/components/auth-provider';
 
-import { Manrope } from 'next/font/google';
+import { Manrope, Geist_Mono } from 'next/font/google';
 
-const manrope = Manrope({
+const sans = Manrope({
   subsets: ['latin'],
   variable: '--font-sans',
 });
 
+const mono = Geist_Mono({
+  subsets: ['latin'],
+  variable: '--font-mono',
+});
+
 export const metadata: Metadata = {
-  title: 'Poultry Training Chat App',
+  title: 'Addis Poultry Training',
   description: 'A streamlined communication platform for poultry farmers and trainers.',
 };
 
-export default function RootLayout({children}: {children: React.ReactNode}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="am-ET" className={`${manrope.variable}`}>
-      <body className="font-sans" suppressHydrationWarning>
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+    <html lang="am-ET" className={`${sans.variable} ${mono.variable}`}>
+      <body className="font-sans relative" suppressHydrationWarning>
+        {/* Isolation wrapper per coss ui / Base UI: portaled overlays
+            (dialogs, sheets, popovers) always paint above page content. */}
+        <div className="isolate relative flex min-h-svh flex-col">
+          <AuthProvider>{children}</AuthProvider>
+        </div>
       </body>
     </html>
   );

@@ -1,9 +1,14 @@
 import { test, expect } from '@playwright/test'
 import { waitForTrainerDashboard } from './helpers'
-import { countTraineesForTrainer } from './db'
+import { countTraineesForTrainer, getProfileByPhone, listTraineesForTrainer } from './db'
 
-const TRAINER_ID = '4368a1da-d33e-446c-ad06-608696f83103'
-const TRAINEE_NAMES = ['Chala Bekele', 'Mulu Tesfaye', 'Abebe Kebede']
+const TRAINER_PHONE = '+251911223344'
+
+async function getTrainerId() {
+  const trainer = await getProfileByPhone(TRAINER_PHONE)
+  expect(trainer, 'trainer profile must exist in DB').not.toBeNull()
+  return trainer!.id
+}
 
 test.describe('Trainer dashboard', () => {
   test.beforeEach(async ({ page }) => {
@@ -19,18 +24,23 @@ test.describe('Trainer dashboard', () => {
     await expect(page.getByText('Chats', { exact: true })).toBeVisible()
   })
 
-  test('B2. all three seeded trainee cards are listed', async ({ page }) => {
+  test('B2. all assigned trainee cards are listed', async ({ page }) => {
+    const trainerId = await getTrainerId()
+    const trainees = await listTraineesForTrainer(trainerId)
+    expect(trainees.length, 'trainer must have assigned trainees in DB').toBeGreaterThan(0)
+
     await expect(page.getByRole('heading', { name: 'Your Trainees' })).toBeVisible()
-    for (const name of TRAINEE_NAMES) {
+    for (const trainee of trainees) {
       await expect(
-        page.getByRole('heading', { name, level: 3 }),
-        `trainee card "${name}" should be rendered`,
+        page.getByRole('heading', { name: trainee.display_name, exact: true }),
+        `trainee card "${trainee.display_name}" should be rendered`,
       ).toBeVisible()
     }
   })
 
   test('B3. each trainee card exposes a message entry point', async ({ page }) => {
-    const dbCount = await countTraineesForTrainer(TRAINER_ID)
+    const trainerId = await getTrainerId()
+    const dbCount = await countTraineesForTrainer(trainerId)
     const links = page.getByRole('link', { name: 'Tap to message' })
     await expect(links, `"Tap to message" links should match DB trainee count`).toHaveCount(dbCount)
   })

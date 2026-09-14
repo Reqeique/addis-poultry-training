@@ -1,13 +1,22 @@
 'use client';
- 
+
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { TrainerBottomNav } from '@/components/TrainerBottomNav';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore, UserProfile } from '@/lib/store';
-import { Loader2, Phone, Sprout, Users } from 'lucide-react';
+import { Phone, Sprout, Users } from 'lucide-react';
 import { resolveApiUrl } from '@/lib/api-helper';
- 
+import { Button } from '@/components/ui/button';
+import { Card, CardHeader, CardTitle, CardDescription, CardPanel } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Input } from '@/components/ui/input';
+import { Field, FieldLabel } from '@/components/ui/field';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Empty, EmptyTitle, EmptyDescription } from '@/components/ui/empty';
+import { Skeleton } from '@/components/ui/skeleton';
+
 export default function TraineesPage() {
   const router = useRouter();
   const supabaseRef = useRef(createClient());
@@ -26,12 +35,9 @@ export default function TraineesPage() {
     farmSize: '',
     flockCount: '',
   });
- 
+
   useEffect(() => {
-    if (!profile) {
-      return;
-    }
- 
+    if (!profile) return;
     if (profile.role !== 'trainer') {
       router.push('/trainee');
       return;
@@ -48,7 +54,72 @@ export default function TraineesPage() {
       if (fetchError) {
         setError(fetchError.message);
       } else {
-        setTrainees((data || []).map((row) => ({
+        setTrainees(
+          (data || []).map((row) => ({
+            uid: row.id,
+            email: row.email || '',
+            displayName: row.display_name,
+            photoURL: row.photo_url || '',
+            role: row.role,
+            focusArea: row.focus_area || '',
+            assignedTrainerId: row.assigned_trainer_id || '',
+            phoneNumber: row.phone_number,
+            farmSize: row.farm_size || '',
+            flockCount: row.flock_count || 0,
+            isActive: row.is_active,
+            createdAt: row.created_at,
+          }))
+        );
+      }
+      setLoading(false);
+    };
+
+    fetchTrainees();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile, router]);
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!profile) {
+      setError('Your session is still loading or has expired. Please wait a moment or sign in again.');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      setError('');
+      setSuccess('');
+
+      const normalizedPhone = form.phoneNumber.startsWith('+') ? form.phoneNumber : `+${form.phoneNumber}`;
+
+      const response = await fetch(resolveApiUrl('/api/trainer/trainees'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          displayName: form.displayName.trim(),
+          phoneNumber: normalizedPhone,
+          password: form.password,
+          focusArea: form.focusArea.trim(),
+          farmSize: form.farmSize.trim(),
+          flockCount: form.flockCount,
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Could not create trainee account.');
+
+      setSuccess('Trainee added. They can now sign in with their phone number and password.');
+      setForm({ displayName: '', phoneNumber: '', password: '', focusArea: '', farmSize: '', flockCount: '' });
+
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('role', 'trainee')
+        .eq('assigned_trainer_id', profile.uid)
+        .order('created_at', { ascending: false });
+
+      setTrainees(
+        (data || []).map((row) => ({
           uid: row.id,
           email: row.email || '',
           displayName: row.display_name,
@@ -61,85 +132,8 @@ export default function TraineesPage() {
           flockCount: row.flock_count || 0,
           isActive: row.is_active,
           createdAt: row.created_at,
-        })));
-      }
-
-      setLoading(false);
-    };
-
-    fetchTrainees();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile, router]);
-
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    if (!profile) {
-      return;
-    }
-
-    try {
-      setSubmitting(true);
-      setError('');
-      setSuccess('');
-
-      const normalizedPhone = form.phoneNumber.startsWith('+')
-        ? form.phoneNumber
-        : `+${form.phoneNumber}`;
-
-
-      const response = await fetch(resolveApiUrl('/api/trainer/trainees'), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          displayName: form.displayName.trim(),
-          phoneNumber: normalizedPhone,
-          password: form.password,
-          focusArea: form.focusArea.trim(),
-          farmSize: form.farmSize.trim(),
-          flockCount: form.flockCount,
-        }),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Could not create trainee account.');
-      }
-
-      setSuccess('Trainee added. They can now sign in with their phone number and password.');
-      setForm({
-        displayName: '',
-        phoneNumber: '',
-        password: '',
-        focusArea: '',
-        farmSize: '',
-        flockCount: '',
-      });
-
-      const { data } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('role', 'trainee')
-        .eq('assigned_trainer_id', profile.uid)
-        .order('created_at', { ascending: false });
-
-      setTrainees((data || []).map((row) => ({
-        uid: row.id,
-        email: row.email || '',
-        displayName: row.display_name,
-        photoURL: row.photo_url || '',
-        role: row.role,
-        focusArea: row.focus_area || '',
-        assignedTrainerId: row.assigned_trainer_id || '',
-        phoneNumber: row.phone_number,
-        farmSize: row.farm_size || '',
-        flockCount: row.flock_count || 0,
-        isActive: row.is_active,
-        createdAt: row.created_at,
-      })));
+        }))
+      );
     } catch (submitError: any) {
       setError(submitError.message || 'Could not add trainee.');
     } finally {
@@ -148,131 +142,165 @@ export default function TraineesPage() {
   };
 
   return (
-    <div className="flex min-h-[100dvh] w-full flex-col bg-background-light font-sans text-slate-900 pb-24">
-      <header className="px-6 pt-12 pb-6 bg-white border-b border-slate-100 mb-6 sticky top-0 z-10">
-        <h1 className="text-2xl font-bold tracking-tight">All Trainees</h1>
-        <p className="text-sm text-slate-500 font-medium mt-1">Manage your trainee roster and preload who can sign in.</p>
+    <div className="flex min-h-svh w-full flex-col bg-background font-sans text-foreground pb-24">
+      <header className="sticky top-0 z-10 border-b border-border bg-card px-6 pb-6 pt-10">
+        <h1 className="font-heading text-2xl font-bold tracking-tight">All Trainees</h1>
+        <p className="mt-1 text-sm font-medium text-muted-foreground">
+          Manage your trainee roster and preload who can sign in.
+        </p>
       </header>
-      <main className="px-6 flex-1 flex flex-col gap-6">
-        <section className="bg-white rounded-3xl border border-slate-100 shadow-sm p-5">
-          <div className="mb-4">
-            <h2 className="text-lg font-bold text-slate-900">Add trainee</h2>
-            <p className="text-sm text-slate-500 mt-1">Each trainee gets a phone-based login backed by a password, with no OTP.</p>
-          </div>
+      <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-6 pt-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Add trainee</CardTitle>
+            <CardDescription>Each trainee gets a phone-based login backed by a password, with no OTP.</CardDescription>
+          </CardHeader>
+          <CardPanel className="flex flex-col gap-3">
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            {success && (
+              <Alert variant="success">
+                <AlertDescription>{success}</AlertDescription>
+              </Alert>
+            )}
+            <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
+              <Field>
+                <FieldLabel htmlFor="trainee-name">Full name</FieldLabel>
+                <Input
+                  id="trainee-name"
+                  placeholder="Full name"
+                  value={form.displayName}
+                  onChange={(e) => setForm((c) => ({ ...c, displayName: e.target.value }))}
+                  required
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="trainee-phone">Phone number</FieldLabel>
+                <span className="relative block">
+                  <Phone className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="trainee-phone"
+                    className="pl-9"
+                    placeholder="Phone number"
+                    value={form.phoneNumber}
+                    onChange={(e) => setForm((c) => ({ ...c, phoneNumber: e.target.value }))}
+                    required
+                  />
+                </span>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="trainee-password">Temporary password</FieldLabel>
+                <Input
+                  id="trainee-password"
+                  placeholder="Temporary password"
+                  type="password"
+                  minLength={6}
+                  value={form.password}
+                  onChange={(e) => setForm((c) => ({ ...c, password: e.target.value }))}
+                  required
+                />
+              </Field>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <Field>
+                  <FieldLabel htmlFor="trainee-focus">Focus area</FieldLabel>
+                  <Input
+                    id="trainee-focus"
+                    placeholder="Focus area"
+                    value={form.focusArea}
+                    onChange={(e) => setForm((c) => ({ ...c, focusArea: e.target.value }))}
+                  />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="trainee-farm">Farm size</FieldLabel>
+                  <Input
+                    id="trainee-farm"
+                    placeholder="Farm size"
+                    value={form.farmSize}
+                    onChange={(e) => setForm((c) => ({ ...c, farmSize: e.target.value }))}
+                  />
+                </Field>
+              </div>
+              <Field>
+                <FieldLabel htmlFor="trainee-flock">Flock count</FieldLabel>
+                <Input
+                  id="trainee-flock"
+                  placeholder="Flock count"
+                  type="number"
+                  min="0"
+                  value={form.flockCount}
+                  onChange={(e) => setForm((c) => ({ ...c, flockCount: e.target.value }))}
+                />
+              </Field>
+              <Button type="submit" loading={submitting} className="mt-1">
+                <Sprout className="size-4" />
+                {submitting ? 'Adding...' : 'Add Trainee'}
+              </Button>
+            </form>
+          </CardPanel>
+        </Card>
 
-          {error && (
-            <div className="mb-4 rounded-2xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
-              {error}
-            </div>
-          )}
-
-          {success && (
-            <div className="mb-4 rounded-2xl bg-[#E5F5E5] px-4 py-3 text-sm font-medium text-primary-dark">
-              {success}
-            </div>
-          )}
-
-          <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
-            <input
-              className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-900 outline-none focus:border-primary"
-              placeholder="Full name"
-              value={form.displayName}
-              onChange={(e) => setForm((current) => ({ ...current, displayName: e.target.value }))}
-              required
-            />
-            <div className="relative">
-              <Phone className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input
-                className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-10 pr-4 text-sm font-medium text-slate-900 outline-none focus:border-primary"
-                placeholder="Phone number"
-                value={form.phoneNumber}
-                onChange={(e) => setForm((current) => ({ ...current, phoneNumber: e.target.value }))}
-                required
-              />
-            </div>
-            <input
-              className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-900 outline-none focus:border-primary"
-              placeholder="Temporary password"
-              type="password"
-              minLength={6}
-              value={form.password}
-              onChange={(e) => setForm((current) => ({ ...current, password: e.target.value }))}
-              required
-            />
-            <input
-              className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-900 outline-none focus:border-primary"
-              placeholder="Focus area"
-              value={form.focusArea}
-              onChange={(e) => setForm((current) => ({ ...current, focusArea: e.target.value }))}
-            />
-            <input
-              className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-900 outline-none focus:border-primary"
-              placeholder="Farm size"
-              value={form.farmSize}
-              onChange={(e) => setForm((current) => ({ ...current, farmSize: e.target.value }))}
-            />
-            <input
-              className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-900 outline-none focus:border-primary"
-              placeholder="Flock count"
-              type="number"
-              min="0"
-              value={form.flockCount}
-              onChange={(e) => setForm((current) => ({ ...current, flockCount: e.target.value }))}
-            />
-            <button
-              type="submit"
-              disabled={submitting}
-              className="mt-2 inline-flex h-12 items-center justify-center gap-2 rounded-full bg-primary px-5 font-bold text-primary-dark transition-colors hover:bg-[#7ED465] disabled:opacity-70"
-            >
-              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sprout className="h-4 w-4" />}
-              <span>{submitting ? 'Adding...' : 'Add Trainee'}</span>
-            </button>
-          </form>
-        </section>
-
-        <section className="flex-1">
-          <div className="mb-4 flex items-center gap-2">
-            <Users className="h-5 w-5 text-slate-400" />
-            <h2 className="text-lg font-bold text-slate-900">Preloaded trainees</h2>
+        <section>
+          <div className="mb-3 flex items-center gap-2 px-1">
+            <Users className="size-5 text-muted-foreground" />
+            <h2 className="font-heading text-lg font-bold">Preloaded trainees</h2>
+            <Badge variant="secondary">{trainees.length}</Badge>
           </div>
 
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            </div>
-          ) : trainees.length === 0 ? (
-            <div className="py-12 flex flex-col items-center justify-center text-center max-w-sm mx-auto">
-              <div className="size-20 bg-slate-100 rounded-full flex items-center justify-center mb-4 border border-slate-200">
-                <Users className="w-10 h-10 text-slate-400" />
-              </div>
-              <h3 className="text-lg font-bold text-slate-900 mb-2">No Trainees Yet</h3>
-              <p className="text-sm text-slate-500 max-w-[240px] leading-relaxed">
-                Add a trainee above to create a phone login with a password for them.
-              </p>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-3">
-              {trainees.map((trainee) => (
-                <div key={trainee.uid} className="rounded-3xl border border-slate-100 bg-white p-4 shadow-sm">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h3 className="font-bold text-slate-900">{trainee.displayName}</h3>
-                      <p className="mt-1 text-sm font-medium text-slate-500">{trainee.phoneNumber}</p>
-                      {(trainee.focusArea || trainee.farmSize || trainee.flockCount) && (
-                        <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                          {[trainee.focusArea, trainee.farmSize, trainee.flockCount ? `${trainee.flockCount} birds` : '']
-                            .filter(Boolean)
-                            .join(' • ')}
-                        </p>
-                      )}
+            <div className="flex flex-col gap-2" role="status" aria-label="Loading trainees">
+              {[0, 1].map((i) => (
+                <Card key={i}>
+                  <CardPanel className="flex items-center gap-3 p-4">
+                    <Skeleton className="size-10 shrink-0 rounded-full" />
+                    <div className="flex-1 space-y-2">
+                      <Skeleton className="h-4 w-1/2" />
+                      <Skeleton className="h-3 w-1/3" />
                     </div>
-                    <span className={`rounded-full px-3 py-1 text-xs font-bold ${trainee.isActive === false ? 'bg-red-100 text-red-700' : 'bg-[#E5F5E5] text-primary-dark'}`}>
-                      {trainee.isActive === false ? 'INACTIVE' : 'ACTIVE'}
-                    </span>
-                  </div>
-                </div>
+                  </CardPanel>
+                </Card>
               ))}
             </div>
+          ) : trainees.length === 0 ? (
+            <Empty>
+              <span className="flex size-14 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                <Users className="size-7" />
+              </span>
+              <EmptyTitle>No Trainees Yet</EmptyTitle>
+              <EmptyDescription>Add a trainee above to create a phone login with a password for them.</EmptyDescription>
+            </Empty>
+          ) : (
+            <ul className="flex flex-col gap-2">
+              {trainees.map((trainee) => (
+                <li key={trainee.uid}>
+                  <Card>
+                    <CardPanel className="flex items-start justify-between gap-3 p-4">
+                      <span className="flex items-start gap-3">
+                        <Avatar>
+                          <AvatarFallback>{trainee.displayName.substring(0, 2).toUpperCase()}</AvatarFallback>
+                        </Avatar>
+                        <span>
+                          <span className="block font-semibold">{trainee.displayName}</span>
+                          <span className="mt-0.5 block text-sm text-muted-foreground">{trainee.phoneNumber}</span>
+                          {(trainee.focusArea || trainee.farmSize || trainee.flockCount) && (
+                            <span className="mt-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                              {[trainee.focusArea, trainee.farmSize, trainee.flockCount ? `${trainee.flockCount} birds` : '']
+                                .filter(Boolean)
+                                .join(' • ')}
+                            </span>
+                          )}
+                        </span>
+                      </span>
+                      <Badge variant={trainee.isActive === false ? 'destructive' : 'success'} size="sm">
+                        {trainee.isActive === false ? 'INACTIVE' : 'ACTIVE'}
+                      </Badge>
+                    </CardPanel>
+                  </Card>
+                </li>
+              ))}
+            </ul>
           )}
         </section>
       </main>
