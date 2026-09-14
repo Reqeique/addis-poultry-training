@@ -123,8 +123,8 @@ export default function AdminDashboard() {
             AD
           </div>
           <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Admin Dashboard</p>
-            <h1 className="text-xl font-bold tracking-tight text-foreground">Hi, {profile?.displayName?.split(' ')[0] || 'Admin'}</h1>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">CEO Dashboard</p>
+            <h1 className="text-xl font-bold tracking-tight text-foreground">Hi, {profile?.displayName?.split(' ')[0] || 'CEO'}</h1>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -159,7 +159,7 @@ export default function AdminDashboard() {
         <div className="flex gap-4 overflow-x-auto no-scrollbar py-2 mb-6" role="status" aria-label={loading ? 'Loading stats' : 'Stats'}>
           <StatTile label="Trainers" value={loading ? undefined : trainers.length} icon={<UserPlus className="w-4 h-4" />} />
           <StatTile label="Trainees" value={loading ? undefined : trainees.length} icon={<Users className="w-4 h-4" />} />
-          <StatTile label="Admins" value={loading ? undefined : admins.length} icon={<Building2 className="w-4 h-4" />} />
+          <StatTile label="CEOs" value={loading ? undefined : admins.length} icon={<Building2 className="w-4 h-4" />} />
         </div>
 
         {/* Register new user */}
@@ -264,7 +264,7 @@ export default function AdminDashboard() {
 
         <UserList title={loading ? 'Trainers' : `Trainers (${trainers.length})`} users={loading ? [] : trainers} testPrefix="admin-trainer" loading={loading} />
         <UserList title={loading ? 'Trainees' : `Trainees (${trainees.length})`} users={loading ? [] : trainees} testPrefix="admin-trainee" loading={loading} />
-        {!loading && admins.length > 0 && <UserList title={`Admins (${admins.length})`} users={admins} testPrefix="admin-admin" />}
+        {!loading && admins.length > 0 && <UserList title={`CEOs (${admins.length})`} users={admins} testPrefix="admin-admin" />}
       </main>
     </div>
   );

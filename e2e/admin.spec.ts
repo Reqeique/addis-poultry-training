@@ -4,7 +4,7 @@ import { getProfileByPhone } from './db'
 
 const ADMIN_PHONE = '+251900000001'
 
-test.describe('Admin dashboard (UI ↔ Supabase)', () => {
+test.describe('CEO dashboard (UI ↔ Supabase)', () => {
   test.beforeEach(async () => {
     test.setTimeout(90_000)
     test.skip(test.info().project.name !== 'admin', 'admin-only spec')
@@ -12,7 +12,7 @@ test.describe('Admin dashboard (UI ↔ Supabase)', () => {
 
   test('A1. admin sees the dashboard and user stats', async ({ page }) => {
     await page.goto('/admin', { waitUntil: 'load' })
-    await expect(page.getByRole('heading', { name: /Hi,.*Admin/ })).toBeVisible({ timeout: 60_000 })
+    await expect(page.getByRole('heading', { name: /Hi,.*CEO/ })).toBeVisible({ timeout: 60_000 })
     await settle(page)
     // Stats tiles render
     await expect(page.getByText('Trainers').first()).toBeVisible()
@@ -21,7 +21,7 @@ test.describe('Admin dashboard (UI ↔ Supabase)', () => {
 
   test('A2. admin registers a new trainee — appears in UI and DB', async ({ page }) => {
     await page.goto('/admin', { waitUntil: 'load' })
-    await expect(page.getByRole('heading', { name: /Hi,.*Admin/ })).toBeVisible({ timeout: 60_000 })
+    await expect(page.getByRole('heading', { name: /Hi,.*CEO/ })).toBeVisible({ timeout: 60_000 })
     await settle(page)
 
     const marker = `e2e-trainee-${Date.now()}`
@@ -55,7 +55,7 @@ test.describe('Admin dashboard (UI ↔ Supabase)', () => {
 
   test('A3. admin registers a new trainer — appears in UI and DB', async ({ page }) => {
     await page.goto('/admin', { waitUntil: 'load' })
-    await expect(page.getByRole('heading', { name: /Hi,.*Admin/ })).toBeVisible({ timeout: 60_000 })
+    await expect(page.getByRole('heading', { name: /Hi,.*CEO/ })).toBeVisible({ timeout: 60_000 })
     await settle(page)
 
     const marker = `e2e-trainer-${Date.now()}`
