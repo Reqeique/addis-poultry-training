@@ -136,7 +136,7 @@ export default function TraineeProfilePage() {
             </div>
             <div>
               <span className="text-xs font-bold tracking-widest text-primary uppercase">{isAmharic ? 'ፕሪሚየም ዕቅድ' : 'PREMIUM PLAN'}</span>
-              <h2 className="text-xl font-black tracking-tight mt-0.5">{isAmharic ? 'አዲስ ፖልትሪ ፕሪሚየም' : 'Addis Poultry Premium'}</h2>
+              <h2 className="text-xl font-black tracking-tight mt-0.5">{isAmharic ? 'ማይ ቺከን አዲስ ፕሪሚየም' : 'My Chicken Addis Premium'}</h2>
             </div>
           </div>
 

@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/store';
-import { useRouter } from 'next/navigation';
 import { Lock, Phone, Eye, EyeOff } from 'lucide-react';
 
 import { buildPhoneLoginEmail, normalizePhoneNumber } from '@/lib/auth/phone-email';
@@ -22,48 +21,7 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { loading: authLoading } = useAuthStore();
-  const router = useRouter();
   const supabase = createClient();
-
-  const handleBypassTrainer = async () => {
-    try {
-      setLoading(true);
-      setError('');
-      await fetch('/api/admin/seed-auth').catch(() => null);
-
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: '251911223344@phone.addis.local',
-        password: 'password123',
-      });
-
-      if (signInError) throw signInError;
-      router.push('/trainer');
-    } catch (err: any) {
-      setError(err.message || 'Could not sign in as supervisor.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleBypassTrainee = async () => {
-    try {
-      setLoading(true);
-      setError('');
-      await fetch('/api/admin/seed-auth').catch(() => null);
-
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: '251922334455@phone.addis.local',
-        password: 'password123',
-      });
-
-      if (signInError) throw signInError;
-      router.push('/trainee');
-    } catch (err: any) {
-      setError(err.message || 'Could not sign in as farmer.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,9 +61,9 @@ export default function LoginPage() {
         </div>
 
         <div className="mb-6 text-center">
-          <p className="mb-1 text-sm font-semibold text-muted-foreground">Hey 👋 there</p>
+          <p className="mb-1 text-sm font-semibold text-muted-foreground">Grow Together</p>
           <h1 className="font-heading text-3xl font-bold tracking-tight">
-            Welcome to <span className="text-primary">My Chicken Addis Poultry</span>
+            Welcome to <span className="text-primary">My Chicken Addis</span>
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
             Sign in with your phone number to reach your supervisor.
@@ -174,16 +132,6 @@ export default function LoginPage() {
                 Sign In
               </Button>
             </form>
-
-            <div className="flex items-center justify-center gap-2 text-xs font-semibold">
-              <button type="button" onClick={handleBypassTrainer} className="text-muted-foreground hover:text-primary">
-                Try Supervisor
-              </button>
-              <span className="text-border">•</span>
-              <button type="button" onClick={handleBypassTrainee} className="text-muted-foreground hover:text-primary">
-                Try Farmer
-              </button>
-            </div>
           </CardPanel>
         </Card>
 
