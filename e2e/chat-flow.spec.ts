@@ -6,6 +6,7 @@ import {
   getChat,
   countSharedChats,
   findPairChat,
+  deleteMessagesByText,
 } from './db'
 
 const TRAINER_PHONE = '+251911223344'
@@ -50,6 +51,7 @@ test.describe('Chat flow (trainer ↔ trainee)', () => {
     const marker = uniqueMarker('chat-e2e')
     const peer = await getPeer()
 
+    try {
     await openChatWith(page, peer.id, peer.display_name)
 
     await page.getByRole('textbox', { name: 'Message...' }).fill(marker)
@@ -61,6 +63,10 @@ test.describe('Chat flow (trainer ↔ trainee)', () => {
     expect(row, 'message must be persisted to the messages table').not.toBeNull()
     expect(row!.sender_id).toBe(trainer!.id)
     expect(row!.text).toContain(marker)
+    } finally {
+      // No e2e noise left behind.
+      await deleteMessagesByText(marker)
+    }
   })
 
   test('C1. regression — opening/sending reuses the existing chat (no duplicate chat created)', async ({
@@ -71,6 +77,7 @@ test.describe('Chat flow (trainer ↔ trainee)', () => {
     const before = await countSharedChats(trainer!.id, peer.id)
 
     const marker = uniqueMarker('chat-dup')
+    try {
     await openChatWith(page, peer.id, peer.display_name)
     await page.getByRole('textbox', { name: 'Message...' }).fill(marker)
     await page.locator('form button[type="submit"]').click()
@@ -78,12 +85,17 @@ test.describe('Chat flow (trainer ↔ trainee)', () => {
 
     const after = await countSharedChats(trainer!.id, peer.id)
     expect(after, 'sending a message must NOT create a new chat for the pair').toBe(before)
+    } finally {
+      // No e2e noise left behind.
+      await deleteMessagesByText(marker)
+    }
   })
 
   test('C2. sending updates chats.last_message in the DB', async ({ page }) => {
     const marker = uniqueMarker('chat-last')
     const peer = await getPeer()
 
+    try {
     await openChatWith(page, peer.id, peer.display_name)
     await page.getByRole('textbox', { name: 'Message...' }).fill(marker)
     await page.locator('form button[type="submit"]').click()
@@ -93,5 +105,9 @@ test.describe('Chat flow (trainer ↔ trainee)', () => {
     expect(row, 'message row must exist').not.toBeNull()
     const chat = await getChat(row!.chat_id)
     expect(chat?.last_message, 'chat.last_message should reflect the sent text').toContain(marker)
+    } finally {
+      // No e2e noise left behind.
+      await deleteMessagesByText(marker)
+    }
   })
 })

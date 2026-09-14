@@ -157,15 +157,17 @@ export default function LoginPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                   />
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="icon-sm"
                     onClick={() => setShowPassword((s) => !s)}
                     aria-label={showPassword ? 'Hide password' : 'Show password'}
                     aria-pressed={showPassword}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1.5 text-muted-foreground transition-colors hover:text-foreground"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   >
                     {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                  </button>
+                  </Button>
                 </span>
               </Field>
               <Button type="submit" size="lg" loading={loading} disabled={!phoneNumber || !password} className="mt-1 w-full">

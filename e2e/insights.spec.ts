@@ -7,8 +7,26 @@ test.describe('Admin insights & messaging analytics (UI ↔ API)', () => {
     test.skip(test.info().project.name !== 'admin', 'admin-only spec')
   })
 
-  test('I1. tabbed insights render messaging, satisfaction, revenue, team', async ({ page }) => {
+  test('I0. bottom nav moves between Users and Insights (register stays on Users)', async ({ page }) => {
     await page.goto('/admin', { waitUntil: 'load' })
+    await expect(page.getByRole('heading', { name: /Hi,.*CEO/ })).toBeVisible({ timeout: 60_000 })
+    await settle(page)
+
+    // Register form lives only on the Users destination.
+    await expect(page.getByTestId('admin-toggle-form')).toBeVisible()
+
+    await page.getByTestId('admin-nav-insights').click()
+    await page.waitForURL(/\/admin\/insights$/, { timeout: 20_000 })
+    await expect(page.getByTestId('admin-insights')).toBeVisible({ timeout: 30_000 })
+    await expect(page.getByTestId('admin-toggle-form')).toHaveCount(0)
+
+    await page.getByTestId('admin-nav-users').click()
+    await page.waitForURL((url) => url.pathname === '/admin', { timeout: 20_000 })
+    await expect(page.getByTestId('admin-toggle-form')).toBeVisible()
+  })
+
+  test('I1. tabbed insights render messaging, satisfaction, revenue, team', async ({ page }) => {
+    await page.goto('/admin/insights', { waitUntil: 'load' })
     await expect(page.getByRole('heading', { name: /Hi,.*CEO/ })).toBeVisible({ timeout: 60_000 })
     await settle(page)
 
@@ -46,7 +64,7 @@ test.describe('Admin insights & messaging analytics (UI ↔ API)', () => {
   })
 
   test('I2. /api/admin/insights returns live aggregates for admin', async ({ page, request }) => {
-    await page.goto('/admin', { waitUntil: 'load' })
+    await page.goto('/admin/insights', { waitUntil: 'load' })
     await expect(page.getByRole('heading', { name: /Hi,.*CEO/ })).toBeVisible({ timeout: 60_000 })
 
     // Reuse the logged-in admin session for a direct API assertion.

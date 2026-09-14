@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { settle } from './helpers'
-import { getProfileByPhone } from './db'
+import { getProfileByPhone, deleteTestProfileByPhone } from './db'
 
 const ADMIN_PHONE = '+251900000001'
 
@@ -28,6 +28,7 @@ test.describe('CEO dashboard (UI ↔ Supabase)', () => {
     const phone = `+2519${(Date.now() % 100_000_000).toString().padStart(8, '0').slice(-8)}`
     const name = `E2E Trainee ${marker}`
 
+    try {
     await page.getByTestId('admin-toggle-form').click()
     await page.getByTestId('admin-create-form').waitFor({ state: 'visible' })
 
@@ -51,6 +52,10 @@ test.describe('CEO dashboard (UI ↔ Supabase)', () => {
     expect(profile, 'trainee profile row must exist in DB').not.toBeNull()
     expect(profile!.role).toBe('trainee')
     expect(profile!.id).toBeTruthy()
+    } finally {
+      // No e2e noise left behind: remove the created user and its rows.
+      await deleteTestProfileByPhone(phone)
+    }
   })
 
   test('A3. admin registers a new trainer — appears in UI and DB', async ({ page }) => {
@@ -62,6 +67,7 @@ test.describe('CEO dashboard (UI ↔ Supabase)', () => {
     const phone = `+2518${(Date.now() % 100_000_000).toString().padStart(8, '0').slice(-8)}`
     const name = `E2E Trainer ${marker}`
 
+    try {
     await page.getByTestId('admin-toggle-form').click()
     await page.getByTestId('admin-create-form').waitFor({ state: 'visible' })
 
@@ -80,6 +86,10 @@ test.describe('CEO dashboard (UI ↔ Supabase)', () => {
     const profile = await getProfileByPhone(phone)
     expect(profile, 'trainer profile row must exist in DB').not.toBeNull()
     expect(profile!.role).toBe('trainer')
+    } finally {
+      // No e2e noise left behind: remove the created user and its rows.
+      await deleteTestProfileByPhone(phone)
+    }
   })
 
   test('A4. non-admin (trainer) hitting /admin is redirected away', async ({ browser }) => {    // Use the trainer session

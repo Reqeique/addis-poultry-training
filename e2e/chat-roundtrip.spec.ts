@@ -5,6 +5,7 @@ import {
   getMessageByText,
   getChat,
   findPairChat,
+  deleteMessagesByText,
 } from './db'
 import { waitForTrainerDashboard, settle, APP_URL } from './helpers'
 
@@ -68,6 +69,8 @@ test.describe('Chat round-trip (trainer ↔ trainee live', () => {
     expect(pairChatId, 'the chat the trainer is on must exist in DB').not.toBeNull()
 
     const txMarker = uniqueMarkerRoundTrip('roundtrip-tx')
+    const createdMarkers = [txMarker]
+    try {
     await sendChatMessage(trainerPage, txMarker)
 
     // UI + DB: trainer's outgoing message is persisted to Supabase.
@@ -94,12 +97,13 @@ test.describe('Chat round-trip (trainer ↔ trainee live', () => {
 
     // Trainee sends a reply.
     const rxMarker = uniqueMarkerRoundTrip('roundtrip-rx')
+    createdMarkers.push(rxMarker)
     await sendChatMessage(traineePage, rxMarker)
     await expectMessageVisible(traineePage, rxMarker)
 
     const rxRow = await getMessageByText(rxMarker)
     expect(rxRow, 'trainee reply persisted to messages table').not.toBeNull()
-    expect(rxRow!.sender_id).toBe(trainee!.id, 'sender must be the trainee (not echo of trainer)')
+    expect(rxRow!.sender_id, 'sender must be the trainee (not echo of trainer)').toBe(trainee!.id)
     expect(rxRow!.chat_id, 'reply is in the same chat as the trainer outgoing').toBe(txRow!.chat_id)
 
     // chats.last_message should now reflect the trainee reply.
@@ -122,6 +126,10 @@ test.describe('Chat round-trip (trainer ↔ trainee live', () => {
 
     // Final canonical state: exactly two new messages, in the same chat.
     expect(rxRow!.chat_id).toBe(txRow!.chat_id)
+    } finally {
+      // No e2e noise left behind.
+      for (const m of createdMarkers) await deleteMessagesByText(m)
+    }
 
     await trainerCtx.close()
     await traineeCtx.close()

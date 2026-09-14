@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "clean": "rm -rf .next dist out"
+    "clean": "rm -rf .next dist out",
+    "db:cleanup-e2e": "bun e2e/cleanup-noise.ts"
   },
   "dependencies": {
     "@aliimam/icons": "^1.1.3",

@@ -122,3 +122,74 @@ export async function listTraineesForTrainer(trainerId: string) {
     .order('display_name')
   return data ?? []
 }
+
+/** Delete chat messages whose text contains the marker. Returns deleted count. */
+export async function deleteMessagesByText(textMarker: string) {
+  const { data } = await admin().from('messages').select('id').like('text', `%${textMarker}%`)
+  const ids = (data ?? []).map((r) => r.id)
+  if (ids.length === 0) return 0
+  await admin().from('messages').delete().in('id', ids)
+  return ids.length
+}
+
+/** Delete inquiries (by trainee + marker) plus their linked chat messages. */
+export async function deleteInquiriesByMarker(traineeId: string, marker: string) {
+  const { data } = await admin()
+    .from('inquiries')
+    .select('id')
+    .eq('trainee_id', traineeId)
+    .like('message', `%${marker}%`)
+  const ids = (data ?? []).map((r) => r.id)
+  for (const id of ids) {
+    await admin().from('messages').delete().eq('inquiry_id', id)
+  }
+  // The mirrored chat text carries the same marker ([High] prefix, etc.).
+  await deleteMessagesByText(marker)
+  if (ids.length > 0) await admin().from('inquiries').delete().in('id', ids)
+  return ids.length
+}
+
+/**
+ * Fully remove a test profile and everything it created: sent messages,
+ * inquiries (as trainee or trainer), chat links, chats left with no
+ * participants, and the auth user. Leaves seed/real data untouched.
+ */
+export async function deleteTestProfileByPhone(phone: string) {
+  const client = admin()
+  const { data: profile } = await client
+    .from('profiles')
+    .select('id, auth_user_id')
+    .eq('phone_number', phone)
+    .maybeSingle()
+  if (!profile) return false
+  const pid = (profile as { id: string }).id
+
+  await client.from('messages').delete().eq('sender_id', pid)
+  await client.from('inquiries').delete().eq('trainee_id', pid)
+  await client.from('inquiries').delete().eq('trainer_id', pid)
+  // Farmers pointing at this profile must be unassigned before it goes.
+  await client.from('profiles').update({ assigned_trainer_id: null }).eq('assigned_trainer_id', pid)
+
+  const { data: parts } = await client.from('chat_participants').select('chat_id').eq('user_id', pid)
+  const chatIds = [...new Set((parts ?? []).map((r) => r.chat_id))]
+  await client.from('chat_participants').delete().eq('user_id', pid)
+  for (const cid of chatIds) {
+    const { count } = await client
+      .from('chat_participants')
+      .select('*', { count: 'exact', head: true })
+      .eq('chat_id', cid)
+    if ((count ?? 0) === 0) await client.from('chats').delete().eq('id', cid)
+  }
+
+  await client.from('profiles').delete().eq('id', pid)
+
+  const authId = (profile as { auth_user_id: string | null }).auth_user_id
+  if (authId) {
+    try {
+      await client.auth.admin.deleteUser(authId)
+    } catch {
+      // Auth row already gone — profile cleanup above is what matters.
+    }
+  }
+  return true
+}

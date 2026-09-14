@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import path from 'node:path';
-import { getProfileByPhone, getInquiryByTrainee, getMessageByInquiry, getChat } from './db';
+import { getProfileByPhone, getInquiryByTrainee, getMessageByInquiry, getChat, deleteInquiriesByMarker } from './db';
 import { settle, switchToEnglish } from './helpers';
 
 const TRAINEE_PHONE = process.env.TRAINEE_PHONE || '+251922334455';
@@ -26,6 +26,7 @@ test.describe('inquiry flow (UI ↔ Supabase)', () => {
     const trainee = await getProfileByPhone(TRAINEE_PHONE);
     const marker = `inquiry-${Date.now()}`;
 
+    try {
     await page.getByRole('button', { name: 'High' }).click();
     await page
       .getByPlaceholder('Describe your question or issue in detail...')
@@ -34,10 +35,14 @@ test.describe('inquiry flow (UI ↔ Supabase)', () => {
 
     await expect(page.getByText('Sent Successfully!')).toBeVisible({ timeout: 10000 });
 
-    const inquiry = await getInquiryByTrainee(trainee.id, `High priority question ${marker}`);
+    const inquiry = await getInquiryByTrainee(trainee!.id, `High priority question ${marker}`);
     expect(inquiry, 'inquiry row created in DB').toBeTruthy();
     expect(inquiry!.urgency).toBe('High');
     expect(inquiry!.status).toBe('pending');
+    } finally {
+      // No e2e noise left behind.
+      if (trainee) await deleteInquiriesByMarker(trainee.id, marker);
+    }
   });
 
   test('B2 attaches an image and the base64 image is stored on the inquiry', async ({ page }) => {
@@ -46,6 +51,7 @@ test.describe('inquiry flow (UI ↔ Supabase)', () => {
     const trainee = await getProfileByPhone(TRAINEE_PHONE);
     const marker = `inquiry-img-${Date.now()}`;
 
+    try {
     // Gallery file input (camera is nth(0), gallery nth(1)) — images are stored as base64, no R2 needed.
     await page.locator('input[type=file][accept="image/*"]').nth(1).setInputFiles(PIXEL);
     await expect(page.getByRole('img').first()).toBeVisible({ timeout: 10000 });
@@ -57,9 +63,13 @@ test.describe('inquiry flow (UI ↔ Supabase)', () => {
 
     await expect(page.getByText('Sent Successfully!')).toBeVisible({ timeout: 10000 });
 
-    const inquiry = await getInquiryByTrainee(trainee.id, `With attachment ${marker}`);
+    const inquiry = await getInquiryByTrainee(trainee!.id, `With attachment ${marker}`);
     expect(inquiry, 'inquiry row created in DB').toBeTruthy();
     expect(inquiry!.image, 'image stored as base64 data URI').toMatch(/^data:image\//);
+    } finally {
+      // No e2e noise left behind.
+      if (trainee) await deleteInquiriesByMarker(trainee.id, marker);
+    }
   });
 
   test('C1 sending an inquiry also drops a message in the trainer chat (DB cross-check)', async ({
@@ -70,6 +80,7 @@ test.describe('inquiry flow (UI ↔ Supabase)', () => {
     const trainee = await getProfileByPhone(TRAINEE_PHONE);
     const marker = `inquiry-msg-${Date.now()}`;
 
+    try {
     await page
       .getByPlaceholder('Describe your question or issue in detail...')
       .fill(`Chat message ${marker}`);
@@ -77,7 +88,7 @@ test.describe('inquiry flow (UI ↔ Supabase)', () => {
 
     await expect(page.getByText('Sent Successfully!')).toBeVisible({ timeout: 10000 });
 
-    const inquiry = await getInquiryByTrainee(trainee.id, `Chat message ${marker}`);
+    const inquiry = await getInquiryByTrainee(trainee!.id, `Chat message ${marker}`);
     expect(inquiry, 'inquiry row created').toBeTruthy();
 
     const msg = await getMessageByInquiry(inquiry!.id);
@@ -87,5 +98,9 @@ test.describe('inquiry flow (UI ↔ Supabase)', () => {
     const chat = await getChat(msg!.chat_id);
     expect(chat, 'chat exists and last_message reflects the inquiry').toBeTruthy();
     expect(chat!.last_message || '').toContain('Chat message');
+    } finally {
+      // No e2e noise left behind.
+      if (trainee) await deleteInquiriesByMarker(trainee.id, marker);
+    }
   });
 });
