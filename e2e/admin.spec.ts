@@ -32,7 +32,8 @@ test.describe('CEO dashboard (UI ↔ Supabase)', () => {
     await page.getByTestId('admin-toggle-form').click()
     await page.getByTestId('admin-create-form').waitFor({ state: 'visible' })
 
-    await page.getByTestId('admin-role').selectOption('trainee')
+    await page.getByTestId('admin-role').click()
+    await page.getByRole('option', { name: 'Trainee', exact: true }).click()
     await page.getByTestId('admin-displayName').fill(name)
     await page.getByTestId('admin-phone').fill(phone)
     await page.getByTestId('admin-password').fill('Trainee123!')
@@ -71,7 +72,8 @@ test.describe('CEO dashboard (UI ↔ Supabase)', () => {
     await page.getByTestId('admin-toggle-form').click()
     await page.getByTestId('admin-create-form').waitFor({ state: 'visible' })
 
-    await page.getByTestId('admin-role').selectOption('trainer')
+    await page.getByTestId('admin-role').click()
+    await page.getByRole('option', { name: 'Trainer', exact: true }).click()
     await page.getByTestId('admin-displayName').fill(name)
     await page.getByTestId('admin-phone').fill(phone)
     await page.getByTestId('admin-password').fill('Trainer123!')

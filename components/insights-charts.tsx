@@ -31,12 +31,12 @@ export function RoleBars({ data }: { data: { name: string; value: number }[] }) 
   const colors = [GREEN_DARK, GREEN, GREEN_LIGHT];
   return (
     <ResponsiveContainer width="100%" height={180}>
-      <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -12 }}>
+      <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-        <XAxis dataKey="name" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
-        <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} allowDecimals={false} />
+        <XAxis dataKey="name" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} interval={0} />
+        <YAxis width={28} tick={{ fontSize: 11 }} tickLine={false} axisLine={false} allowDecimals={false} />
         <Tooltip contentStyle={tooltipStyle} />
-        <Bar dataKey="value" radius={[8, 8, 0, 0]}>
+        <Bar dataKey="value" radius={[8, 8, 0, 0]} isAnimationActive={false}>
           {data.map((_, i) => (
             <Cell key={i} fill={colors[i % colors.length]} />
           ))}
@@ -59,7 +59,7 @@ export function RevenueTrend({ data }: { data: { name: string; revenue: number }
           tickFormatter={(v: number) => (v >= 1000 ? `${Math.round(v / 1000)}k` : `${v}`)}
         />
         <Tooltip contentStyle={tooltipStyle} formatter={(v) => [`${Number(v).toLocaleString()} ETB`, 'Revenue']} />
-        <Bar dataKey="revenue" fill={GREEN_DARK} radius={[8, 8, 0, 0]} />
+        <Bar dataKey="revenue" fill={GREEN_DARK} radius={[8, 8, 0, 0]} isAnimationActive={false} />
       </BarChart>
     </ResponsiveContainer>
   );
@@ -73,7 +73,7 @@ export function ResponseDonut({ responded, pending }: { responded: number; pendi
   return (
     <ResponsiveContainer width="100%" height={180}>
       <PieChart>
-        <Pie data={data} dataKey="value" nameKey="name" innerRadius={52} outerRadius={72} paddingAngle={3}>
+        <Pie data={data} dataKey="value" nameKey="name" innerRadius={52} outerRadius={72} paddingAngle={3} isAnimationActive={false}>
           <Cell fill={GREEN_DARK} />
           <Cell fill={AMBER} />
         </Pie>
@@ -103,8 +103,8 @@ export function TeamActivity({
           tickFormatter={(v: string) => (v.length > 11 ? `${v.slice(0, 11)}…` : v)}
         />
         <Tooltip contentStyle={tooltipStyle} />
-        <Bar dataKey="messages" stackId="a" fill={GREEN_DARK} radius={[0, 0, 0, 0]} />
-        <Bar dataKey="replies" stackId="a" fill={GREEN_LIGHT} radius={[0, 6, 6, 0]} />
+        <Bar dataKey="messages" stackId="a" fill={GREEN_DARK} radius={[0, 0, 0, 0]} isAnimationActive={false} />
+        <Bar dataKey="replies" stackId="a" fill={GREEN_LIGHT} radius={[0, 6, 6, 0]} isAnimationActive={false} />
       </BarChart>
     </ResponsiveContainer>
   );

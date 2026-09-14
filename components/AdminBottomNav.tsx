@@ -1,39 +1,38 @@
 'use client';
-import Link from 'next/link';
 import { Users, ChartColumn } from 'lucide-react';
-import { usePathname } from 'next/navigation';
-import { cn } from '@/lib/utils';
-
-const ITEMS = [
-  { href: '/admin', label: 'Users', testId: 'admin-nav-users', Icon: Users },
-  { href: '/admin/insights', label: 'Insights', testId: 'admin-nav-insights', Icon: ChartColumn },
-];
+import { usePathname, useRouter } from 'next/navigation';
+import { Tabs, TabsList, TabsTab } from '@/components/ui/tabs';
 
 export function AdminBottomNav() {
   const pathname = usePathname();
+  const router = useRouter();
+  const value = pathname.startsWith('/admin/insights') ? '/admin/insights' : '/admin';
 
   return (
     <nav aria-label="CEO sections" className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card pb-safe">
-      <div className="mx-auto flex max-w-lg items-center justify-around px-6 py-2">
-        {ITEMS.map(({ href, label, testId, Icon }) => {
-          const active = href === '/admin' ? pathname === href : pathname.startsWith(href);
-          return (
-            <Link
-              key={href}
-              href={href}
-              data-testid={testId}
-              aria-label={label}
-              aria-current={active ? 'page' : undefined}
-              className={cn(
-                'flex flex-col items-center gap-1 rounded-lg px-4 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors',
-                active ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
-              )}
+      <div className="mx-auto flex max-w-lg justify-center px-6 py-2">
+        <Tabs value={value} onValueChange={(v) => router.push(v)} className="w-full max-w-xs">
+          <TabsList aria-label="CEO sections" className="w-full">
+            <TabsTab
+              value="/admin"
+              data-testid="admin-nav-users"
+              aria-label="Users"
+              className="min-w-0 flex-1 shrink flex-col gap-1 py-1 text-[10px] sm:text-[10px] font-bold uppercase tracking-wider"
             >
-              <Icon className="size-5" />
-              <span>{label}</span>
-            </Link>
-          );
-        })}
+              <Users className="size-5" />
+              <span>Users</span>
+            </TabsTab>
+            <TabsTab
+              value="/admin/insights"
+              data-testid="admin-nav-insights"
+              aria-label="Insights"
+              className="min-w-0 flex-1 shrink flex-col gap-1 py-1 text-[10px] sm:text-[10px] font-bold uppercase tracking-wider"
+            >
+              <ChartColumn className="size-5" />
+              <span>Insights</span>
+            </TabsTab>
+          </TabsList>
+        </Tabs>
       </div>
     </nav>
   );

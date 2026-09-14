@@ -413,7 +413,7 @@ export default function TrainerDashboard() {
                     <Separator className="my-3" />
 
                     <div className="flex items-center justify-between gap-3">
-                      <div className="flex flex-col gap-1">
+                      <div className="flex min-w-0 flex-col gap-1">
                         <span className="flex items-center gap-2">
                           <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
                             Subscription
@@ -440,7 +440,8 @@ export default function TrainerDashboard() {
 
                       <Switch
                         checked={isActive}
-                        aria-label={isActive ? 'Deactivate trainee' : 'Activate trainee'}
+                        aria-label={isActive ? 'Deactivate farmer' : 'Activate farmer'}
+                        className="shrink-0"
                         onCheckedChange={(next) => {
                           if (next) activateSubscription(trainee);
                           else deactivateTrainee(trainee);

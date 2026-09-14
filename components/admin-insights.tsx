@@ -5,6 +5,8 @@ import { Users, MessageSquare, Clock, Star, Banknote, Activity } from 'lucide-re
 import { Tabs, TabsList, TabsTab, TabsPanel } from '@/components/ui/tabs';
 import { RoleBars, RevenueTrend, ResponseDonut, TeamActivity } from '@/components/insights-charts';
 import { Card, CardPanel } from '@/components/ui/card';
+import { Empty, EmptyHeader, EmptyTitle, EmptyDescription } from '@/components/ui/empty';
+import { Skeleton } from '@/components/ui/skeleton';
 import { StatTile } from '@/components/stat-tile';
 
 interface Insights {
@@ -89,20 +91,25 @@ export function AdminInsights() {
         <section className="mb-6" data-testid="admin-insights" aria-label="Insights and messaging analytics">
           <h2 className="text-base font-bold text-foreground mb-3">Insights & messaging analytics</h2>
           {insightsLoading && !insights ? (
-            <div className="px-5 py-6 rounded-2xl bg-card border border-border text-muted-foreground text-center text-sm" role="status">
-              Loading insights…
+            <div className="grid gap-2" role="status" aria-label="Loading insights">
+              <Skeleton className="h-20 w-full rounded-2xl" />
+              <Skeleton className="h-40 w-full rounded-2xl" />
+              <Skeleton className="h-24 w-full rounded-2xl" />
             </div>
           ) : !insights ? (
-            <div className="px-5 py-6 rounded-2xl bg-card border border-border text-muted-foreground text-center text-sm">
-              Insights unavailable
-            </div>
+            <Empty>
+              <EmptyHeader>
+                <EmptyTitle>Insights unavailable</EmptyTitle>
+                <EmptyDescription>Pull to refresh or try again shortly.</EmptyDescription>
+              </EmptyHeader>
+            </Empty>
           ) : (
             <Tabs defaultValue="messaging" className="grid gap-3">
-              <TabsList aria-label="Insight categories" className="w-full">
-                <TabsTab value="messaging" data-testid="insights-tab-messaging" className="flex-1">Messaging</TabsTab>
-                <TabsTab value="satisfaction" data-testid="insights-tab-satisfaction" className="flex-1">Satisfaction</TabsTab>
-                <TabsTab value="revenue" data-testid="insights-tab-revenue" className="flex-1">Revenue</TabsTab>
-                <TabsTab value="team" data-testid="insights-tab-team" className="flex-1">Team</TabsTab>
+              <TabsList aria-label="Insight categories" className="w-full max-w-full">
+                <TabsTab value="messaging" data-testid="insights-tab-messaging" className="min-w-0 flex-1 shrink px-1 text-[13px] sm:text-sm">Messaging</TabsTab>
+                <TabsTab value="satisfaction" data-testid="insights-tab-satisfaction" className="min-w-0 flex-1 shrink px-1 text-[13px] sm:text-sm">Satisfaction</TabsTab>
+                <TabsTab value="revenue" data-testid="insights-tab-revenue" className="min-w-0 flex-1 shrink px-1 text-[13px] sm:text-sm">Revenue</TabsTab>
+                <TabsTab value="team" data-testid="insights-tab-team" className="min-w-0 flex-1 shrink px-1 text-[13px] sm:text-sm">Team</TabsTab>
               </TabsList>
               <TabsPanel value="messaging" className="grid gap-3">
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -140,7 +147,7 @@ export function AdminInsights() {
               <CardPanel className="p-5">
                 <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-3">Top senders</p>
                 {insights.messaging.top_senders.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No messages yet</p>
+                  <Empty className="gap-1 py-4 md:py-4"><EmptyDescription>No messages yet</EmptyDescription></Empty>
                 ) : (
                   <ul className="grid gap-2">
                     {insights.messaging.top_senders.slice(0, 5).map((s) => (
@@ -160,7 +167,7 @@ export function AdminInsights() {
                   Waiting for a reply ({insights.messaging.unreplied_count})
                 </p>
                 {insights.messaging.unreplied_chats.length === 0 && insights.messaging.pending_list.length === 0 ? (
-                  <p className="text-sm text-muted-foreground" data-testid="insights-unreplied-empty">Inbox zero — everyone got a reply</p>
+                  <Empty className="gap-1 py-4 md:py-4" data-testid="insights-unreplied-empty"><EmptyDescription>Inbox zero — everyone got a reply</EmptyDescription></Empty>
                 ) : (
                   <ul className="grid gap-2">
                     {insights.messaging.unreplied_chats.slice(0, 5).map((c) => (
@@ -222,7 +229,7 @@ export function AdminInsights() {
               <CardPanel className="p-5">
                 <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-3">Revenue trend (ETB)</p>
                 {insights.revenue.monthly.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No payments recorded yet</p>
+                  <Empty className="gap-1 py-4 md:py-4"><EmptyDescription>No payments recorded yet</EmptyDescription></Empty>
                 ) : (
                   <RevenueTrend data={insights.revenue.monthly} />
                 )}
@@ -249,7 +256,7 @@ export function AdminInsights() {
               <CardPanel className="p-5">
                 <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-3">Messages vs inquiry replies per supervisor</p>
                 {insights.employees.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No trainers yet</p>
+                  <Empty className="gap-1 py-4 md:py-4"><EmptyDescription>No trainers yet</EmptyDescription></Empty>
                 ) : (
                   <TeamActivity
                     data={insights.employees.slice(0, 8).map((e) => ({
@@ -266,7 +273,7 @@ export function AdminInsights() {
               <CardPanel className="p-5">
                 <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-3">Employee activity</p>
                 {insights.employees.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No trainers yet</p>
+                  <Empty className="gap-1 py-4 md:py-4"><EmptyDescription>No trainers yet</EmptyDescription></Empty>
                 ) : (
                   <ul className="grid gap-2">
                     {insights.employees.slice(0, 8).map((e) => (

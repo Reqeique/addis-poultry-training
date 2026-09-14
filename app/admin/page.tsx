@@ -29,6 +29,12 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
 } from '@/components/ui/alert-dialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { toastManager } from '@/components/ui/toast';
+import { Card, CardPanel } from '@/components/ui/card';
+import { Select, SelectTrigger, SelectValue, SelectPopup, SelectItem } from '@/components/ui/select';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Empty, EmptyTitle } from '@/components/ui/empty';
 
 interface AdminUser {
   id: string;
@@ -78,7 +84,6 @@ export default function AdminDashboard() {
   const [deleting, setDeleting] = useState<AdminUser | null>(null);
   const [deletingBusy, setDeletingBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [toast, setToast] = useState('');
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 10_000);
@@ -112,8 +117,7 @@ export default function AdminDashboard() {
   }
 
   const showToast = (message: string) => {
-    setToast(message);
-    setTimeout(() => setToast(''), 3000);
+    toastManager.add({ type: 'success', title: message });
   };
 
   const handleLogout = async () => {
@@ -257,11 +261,6 @@ export default function AdminDashboard() {
   // Shell-first: header renders instantly, stats + lists shimmer while loading.
   return (
     <div className="flex min-h-screen w-full flex-col overflow-x-hidden bg-background font-sans text-foreground pb-24">
-      {toast && (
-        <div className="fixed left-1/2 top-6 z-[110] -translate-x-1/2 rounded-full border border-border bg-card px-5 py-2.5 text-sm font-semibold shadow-lg">
-          {toast}
-        </div>
-      )}
       <header className="flex items-center px-6 pt-12 pb-4 justify-between bg-background sticky top-0 z-10">
         <div className="flex items-center gap-4">
           <div className="size-12 rounded-full bg-primary/10 border border-border flex items-center justify-center text-primary-foreground font-bold">
@@ -273,27 +272,28 @@ export default function AdminDashboard() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <button
+          <Button
+            variant="outline"
+            size="icon"
             onClick={() => setShowSearch(!showSearch)}
-            className={`flex size-11 items-center justify-center rounded-full bg-card border shadow-sm text-foreground hover:text-primary transition-colors ${showSearch ? 'border-primary text-primary' : 'border-border hover:border-primary'}`}
             aria-label="Toggle search"
+            aria-pressed={showSearch}
           >
             <Search className="w-5 h-5" />
-          </button>
-          <button onClick={handleLogout} className="flex size-11 items-center justify-center rounded-full bg-card border border-border shadow-sm text-red-500 hover:bg-red-50 transition-colors" aria-label="Sign out">
-            <LogOut className="w-5 h-5 ml-0.5" />
-          </button>
+          </Button>
+          <Button variant="outline" size="icon" onClick={handleLogout} aria-label="Sign out" className="text-destructive">
+            <LogOut className="w-5 h-5" />
+          </Button>
         </div>
       </header>
 
       {showSearch && (
         <div className="px-6 pb-4">
-          <input
+          <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             type="search"
             placeholder="Search users by name or phone"
-            className="w-full px-4 py-3 rounded-2xl border border-border bg-card focus:outline-none focus:border-primary"
             aria-label="Search users"
           />
         </div>
@@ -307,107 +307,111 @@ export default function AdminDashboard() {
           <StatTile label="CEOs" value={loading ? undefined : admins.length} icon={<Building2 className="w-4 h-4" />} />
         </div>
         {actionError && (
-          <div className="mb-4 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive" role="alert">
-            {actionError}
-          </div>
+          <Alert variant="error" className="mb-4">
+            <AlertDescription>{actionError}</AlertDescription>
+          </Alert>
         )}
 
         {/* Register new user */}
         <section className="mb-6">
-          <button
+          <Button
             onClick={() => setShowForm((s) => !s)}
             data-testid="admin-toggle-form"
-            className="w-full flex items-center justify-between px-5 py-4 rounded-3xl bg-primary text-primary-foreground shadow-sm hover:opacity-90 transition-all active:scale-[0.98]"
+            size="lg"
+            className="w-full justify-between rounded-3xl px-5 py-4"
           >
             <span className="flex items-center gap-2 font-semibold">
               <UserPlus className="w-5 h-5" />
               {showForm ? 'Close form' : 'Register a new user'}
             </span>
             <ChevronRight className={`w-5 h-5 transition-transform ${showForm ? 'rotate-90' : ''}`} />
-          </button>
+          </Button>
 
           {showForm && (
-            <form
-              onSubmit={handleCreateUser}
-              className="mt-4 bg-card border border-border shadow-sm rounded-3xl p-5 grid gap-3"
-              data-testid="admin-create-form"
-            >
-              <label className="grid gap-1">
-                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Role</span>
-                <select
-                  value={role}
-                  onChange={(e) => setRole(e.target.value as 'trainer' | 'trainee')}
-                  className="px-4 py-3 rounded-2xl border border-border bg-card focus:outline-none focus:border-primary"
-                  data-testid="admin-role"
-                >
-                  <option value="trainee">Trainee</option>
-                  <option value="trainer">Trainer</option>
-                </select>
-              </label>
+            <form onSubmit={handleCreateUser} data-testid="admin-create-form">
+              <Card className="mt-4">
+                <CardPanel className="grid gap-3 p-5">
+              <Field>
+                <FieldLabel htmlFor="admin-role">Role</FieldLabel>
+                <Select value={role} onValueChange={(v) => setRole(v as 'trainer' | 'trainee')}>
+                  <SelectTrigger data-testid="admin-role" aria-label="Role">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectPopup>
+                    <SelectItem value="trainee">Trainee</SelectItem>
+                    <SelectItem value="trainer">Trainer</SelectItem>
+                  </SelectPopup>
+                </Select>
+              </Field>
 
-              <label className="grid gap-1">
-                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Display name</span>
-                <input
+              <Field>
+                <FieldLabel htmlFor="admin-displayName">Display name</FieldLabel>
+                <Input
+                  id="admin-displayName"
                   required
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
                   placeholder="Full name"
-                  className="px-4 py-3 rounded-2xl border border-border bg-card focus:outline-none focus:border-primary"
                   data-testid="admin-displayName"
                 />
-              </label>
+              </Field>
 
-              <label className="grid gap-1">
-                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Phone number</span>
-                <input
+              <Field>
+                <FieldLabel htmlFor="admin-phone">Phone number</FieldLabel>
+                <Input
+                  id="admin-phone"
                   required
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
                   placeholder="+2519XXXXXXXX"
-                  className="px-4 py-3 rounded-2xl border border-border bg-card focus:outline-none focus:border-primary"
                   data-testid="admin-phone"
                 />
-              </label>
+              </Field>
 
-              <label className="grid gap-1">
-                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Password</span>
-                <input
+              <Field>
+                <FieldLabel htmlFor="admin-password">Password</FieldLabel>
+                <Input
+                  id="admin-password"
                   required
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   minLength={6}
                   placeholder="At least 6 characters"
-                  className="px-4 py-3 rounded-2xl border border-border bg-card focus:outline-none focus:border-primary"
                   data-testid="admin-password"
                 />
-              </label>
+              </Field>
 
               {role === 'trainee' && (
-                <label className="grid gap-1">
-                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Focus area (optional)</span>
-                  <input
+                <Field>
+                  <FieldLabel htmlFor="admin-focusArea">Focus area (optional)</FieldLabel>
+                  <Input
+                    id="admin-focusArea"
                     value={focusArea}
                     onChange={(e) => setFocusArea(e.target.value)}
                     placeholder="e.g. Broiler, Egg production"
-                    className="px-4 py-3 rounded-2xl border border-border bg-card focus:outline-none focus:border-primary"
                     data-testid="admin-focusArea"
                   />
-                </label>
+                </Field>
               )}
 
               {formError && (
-                <p className="text-red-600 text-sm" data-testid="admin-form-error">{formError}</p>
+                <Alert variant="error">
+                  <AlertDescription data-testid="admin-form-error">{formError}</AlertDescription>
+                </Alert>
               )}
 
-              <button
+              <Button
                 type="submit"
-                disabled={submitting}
+                loading={submitting}
                 data-testid="admin-submit"
-                className="mt-2 px-5 py-3 rounded-2xl bg-primary text-primary-foreground font-semibold shadow-sm hover:opacity-90 transition-all active:scale-[0.98] disabled:opacity-50"
+                size="lg"
+                className="mt-2 w-full"
               >
                 {submitting ? 'Creating...' : 'Create user'}
-              </button>
+              </Button>
+                </CardPanel>
+              </Card>
             </form>
           )}
         </section>
@@ -455,9 +459,9 @@ export default function AdminDashboard() {
               </DialogHeader>
               <DialogPanel className="flex flex-col gap-3">
                 {editError && (
-                  <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive" data-testid="admin-edit-error">
-                    {editError}
-                  </div>
+                  <Alert variant="error">
+                    <AlertDescription data-testid="admin-edit-error">{editError}</AlertDescription>
+                  </Alert>
                 )}
                 <Field>
                   <FieldLabel htmlFor="admin-edit-name">Display name</FieldLabel>
@@ -481,19 +485,20 @@ export default function AdminDashboard() {
                 </Field>
                 <Field>
                   <FieldLabel htmlFor="admin-edit-role">Role</FieldLabel>
-                  <select
-                    id="admin-edit-role"
+                  <Select
                     value={editForm.role}
-                    onChange={(e) => setEditForm((f) => ({ ...f, role: e.target.value as RoleFilter }))}
+                    onValueChange={(v) => setEditForm((f) => ({ ...f, role: v as RoleFilter }))}
                     disabled={editing.id === selfId}
-                    title={editing.id === selfId ? 'You cannot change your own role' : undefined}
-                    className="h-10 w-full rounded-[var(--radius)] border border-input bg-background px-3 text-sm outline-none focus:border-ring disabled:opacity-50"
-                    data-testid="admin-edit-role"
                   >
-                    <option value="trainee">Trainee</option>
-                    <option value="trainer">Trainer</option>
-                    <option value="admin">CEO</option>
-                  </select>
+                    <SelectTrigger id="admin-edit-role" data-testid="admin-edit-role" aria-label="Role">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectPopup>
+                      <SelectItem value="trainee">Trainee</SelectItem>
+                      <SelectItem value="trainer">Trainer</SelectItem>
+                      <SelectItem value="admin">CEO</SelectItem>
+                    </SelectPopup>
+                  </Select>
                 </Field>
                 <div className="grid grid-cols-2 gap-3">
                   <Field>
@@ -526,16 +531,17 @@ export default function AdminDashboard() {
                     data-testid="admin-edit-flockCount"
                   />
                 </Field>
-                <div className="flex items-center justify-between rounded-xl border border-border bg-muted/50 px-4 py-3">
-                  <span className="text-sm font-semibold">Account active</span>
+                <Field orientation="horizontal" className="rounded-xl border border-border bg-muted/50 px-4 py-3">
+                  <FieldLabel htmlFor="admin-edit-active">Account active</FieldLabel>
                   <Switch
+                    id="admin-edit-active"
                     checked={editForm.isActive}
                     onCheckedChange={(next) => setEditForm((f) => ({ ...f, isActive: next }))}
                     disabled={editing.id === selfId}
                     aria-label={editing.id === selfId ? 'Cannot deactivate your own account' : 'Account active'}
                     data-testid="admin-edit-active"
                   />
-                </div>
+                </Field>
               </DialogPanel>
               <DialogFooter>
                 <Button type="submit" loading={savingEdit} className="w-full" data-testid="admin-edit-save">
@@ -604,7 +610,11 @@ function UserList({
             </li>
           ))
         ) : users.length === 0 ? (
-          <li className="px-5 py-6 rounded-2xl bg-card border border-border text-muted-foreground text-center text-sm">No users yet</li>
+          <li>
+            <Empty className="gap-1 rounded-2xl border border-border bg-card py-6 md:py-6">
+              <EmptyTitle className="text-base">No users yet</EmptyTitle>
+            </Empty>
+          </li>
         ) : users.map((u) => {
           const isSelf = selfId != null && u.id === selfId;
           return (
@@ -613,12 +623,14 @@ function UserList({
               className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-card border border-border shadow-sm"
               data-testid={testPrefix}
             >
-              <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center text-primary-foreground font-bold">
-                {u.display_name?.substring(0, 2).toUpperCase()}
-              </div>
+              <Avatar className="size-10 bg-primary/10">
+                <AvatarFallback className="bg-primary/10 font-bold text-primary-foreground">
+                  {u.display_name?.substring(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-foreground truncate">{u.display_name}</p>
-                <p className="text-sm text-muted-foreground">{u.phone_number}</p>
+                <p className="text-sm text-muted-foreground truncate">{u.phone_number}</p>
               </div>
               <div className="flex shrink-0 items-center gap-1">
                 <Switch

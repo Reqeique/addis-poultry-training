@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/lib/store';
 import { useRouter } from 'next/navigation';
 import { LogOut } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { AdminInsights } from '@/components/admin-insights';
 import { AdminBottomNav } from '@/components/AdminBottomNav';
 
@@ -41,9 +42,9 @@ export default function AdminInsightsPage() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <button onClick={handleLogout} className="flex size-11 items-center justify-center rounded-full bg-card border border-border shadow-sm text-red-500 hover:bg-red-50 transition-colors" aria-label="Sign out">
-            <LogOut className="w-5 h-5 ml-0.5" />
-          </button>
+          <Button variant="outline" size="icon" onClick={handleLogout} aria-label="Sign out" className="text-destructive">
+            <LogOut className="w-5 h-5" />
+          </Button>
         </div>
       </header>
 
