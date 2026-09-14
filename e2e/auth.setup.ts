@@ -21,7 +21,8 @@ async function loginAndSave({ phone, password, landing, file }: Creds) {
     await page.getByRole('textbox', { name: 'Password' }).fill(password)
     await page.getByRole('button', { name: 'Sign In' }).click()
     // AuthProvider redirects to the role dashboard after profile fetch.
-    await page.waitForURL(landing, { timeout: 30_000 })
+    // Generous timeout: first login also pays for cold route compilation.
+    await page.waitForURL(landing, { timeout: 90_000 })
     await page.waitForLoadState('networkidle').catch(() => {})
     mkdirSync(STORAGE_DIR, { recursive: true })
     await page.context().storageState({ path: `${STORAGE_DIR}/${file}` })
@@ -31,9 +32,36 @@ async function loginAndSave({ phone, password, landing, file }: Creds) {
   }
 }
 
+async function warmup() {
+  // Pre-compile the routes the suite hits so tests don't pay for cold
+  // compilation inside their own timeouts.
+  const browser = await chromium.launch()
+  const page = await browser.newPage()
+  try {
+    for (const path of ['/', '/trainer', '/trainee', '/admin', '/admin/insights', '/trainer/trainees']) {
+      await page.goto(`${BASE_URL}${path}`, { waitUntil: 'load', timeout: 90_000 }).catch(() => {})
+    }
+    console.log('[auth.setup] warmup done')
+  } finally {
+    await browser.close()
+  }
+}
+
 async function globalSetup(_config: FullConfig) {
+  await warmup()
   for (const account of ACCOUNTS) {
-    await loginAndSave(account)
+    let lastError: unknown = null
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        await loginAndSave(account)
+        lastError = null
+        break
+      } catch (e) {
+        lastError = e
+        console.log(`[auth.setup] login attempt ${attempt} failed for ${account.file}, retrying…`)
+      }
+    }
+    if (lastError) throw lastError
   }
 }
 

@@ -127,6 +127,9 @@ test.describe('CEO dashboard (UI ↔ Supabase)', () => {
     await row.getByTestId('admin-trainee-edit').click()
     await expect(page.getByTestId('admin-edit-dialog')).toBeVisible({ timeout: 10_000 })
     await page.getByTestId('admin-edit-displayName').fill(renamed)
+    // Let the dialog settle after fill-scroll before clicking save.
+    await page.getByTestId('admin-edit-save').scrollIntoViewIfNeeded()
+    await settle(page)
     await page.getByTestId('admin-edit-save').click()
     await expect(page.getByTestId('admin-trainee').filter({ hasText: renamed })).toBeVisible({ timeout: 20_000 })
     const updated = await getProfileByPhone(phone)

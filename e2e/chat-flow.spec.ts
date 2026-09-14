@@ -103,8 +103,10 @@ test.describe('Chat flow (trainer ↔ trainee)', () => {
 
     const row = await getMessageByText(marker)
     expect(row, 'message row must exist').not.toBeNull()
-    const chat = await getChat(row!.chat_id)
-    expect(chat?.last_message, 'chat.last_message should reflect the sent text').toContain(marker)
+    // Poll: the chats mirror update trails the realtime echo.
+    await expect
+      .poll(async () => (await getChat(row!.chat_id))?.last_message ?? '', { timeout: 15_000 })
+      .toContain(marker)
     } finally {
       // No e2e noise left behind.
       await deleteMessagesByText(marker)

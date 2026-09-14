@@ -56,7 +56,8 @@ test.describe('Trainer dashboard', () => {
 
   test('C1. farmer management page renders the add-farmer form', async ({ page }) => {
     await page.goto('/trainer/trainees')
-    await expect(page.getByRole('heading', { name: 'Add farmer' })).toBeVisible()
+    // CardTitle renders as a div, not a heading — assert by text.
+    await expect(page.getByText('Add farmer', { exact: true })).toBeVisible()
     await expect(page.getByRole('textbox', { name: 'Full name' })).toBeVisible()
     await expect(page.getByRole('textbox', { name: 'Phone number' })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Add Farmer' })).toBeVisible()

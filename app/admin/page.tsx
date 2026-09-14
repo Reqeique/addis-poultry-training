@@ -450,14 +450,14 @@ export default function AdminDashboard() {
       </main>
 
       <Dialog open={editing !== null} onOpenChange={(open) => !open && setEditing(null)}>
-        <DialogPopup data-testid="admin-edit-dialog">
+        <DialogPopup data-testid="admin-edit-dialog" className="max-h-[calc(100dvh-2rem)] overflow-y-auto">
           {editing && (
             <form onSubmit={handleSaveEdit}>
               <DialogHeader>
                 <DialogTitle>Edit user</DialogTitle>
                 <DialogDescription>Update {editing.display_name}&apos;s account. Phone changes update their login.</DialogDescription>
               </DialogHeader>
-              <DialogPanel className="flex flex-col gap-3">
+              <DialogPanel className="flex flex-col gap-2">
                 {editError && (
                   <Alert variant="error">
                     <AlertDescription data-testid="admin-edit-error">{editError}</AlertDescription>

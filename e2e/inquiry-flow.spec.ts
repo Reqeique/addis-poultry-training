@@ -1,10 +1,10 @@
 import { test, expect, type Page } from '@playwright/test';
 import path from 'node:path';
 import { getProfileByPhone, getInquiryByTrainee, getMessageByInquiry, getChat, deleteInquiriesByMarker } from './db';
-import { settle, switchToEnglish } from './helpers';
+import { settle, switchToEnglish, APP_URL } from './helpers';
 
 const TRAINEE_PHONE = process.env.TRAINEE_PHONE || '+251922334455';
-const TRAINE_URL = process.env.BASE_URL || 'http://localhost:3002';
+const TRAINE_URL = process.env.E2E_BASE_URL || APP_URL;
 const PIXEL = path.resolve(__dirname, 'fixtures', 'pixel.png');
 
 async function goTraineeInquiry(page: Page) {

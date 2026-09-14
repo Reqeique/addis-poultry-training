@@ -80,8 +80,10 @@ test.describe('Chat round-trip (trainer ↔ trainee live', () => {
     expect(txRow!.sender_id).toBe(trainer!.id)
     expect(txRow!.text).toContain(txMarker)
 
-    let trainerLastMsg = (await getChat(txRow!.chat_id))?.last_message ?? ''
-    expect(trainerLastMsg, 'chats.last_message mirrored the trainer outgoing message').toContain(txMarker)
+    // The chats mirror update trails the realtime echo — poll for convergence.
+    await expect
+      .poll(async () => (await getChat(txRow!.chat_id))?.last_message ?? '', { timeout: 15_000 })
+      .toContain(txMarker)
 
     // =========================================================
     // STEP 2. Trainee opens the trainer chat and sees what
@@ -106,9 +108,11 @@ test.describe('Chat round-trip (trainer ↔ trainee live', () => {
     expect(rxRow!.sender_id, 'sender must be the trainee (not echo of trainer)').toBe(trainee!.id)
     expect(rxRow!.chat_id, 'reply is in the same chat as the trainer outgoing').toBe(txRow!.chat_id)
 
-    // chats.last_message should now reflect the trainee reply.
-    const chatAfterReply = await getChat(rxRow!.chat_id)
-    expect(chatAfterReply?.last_message, 'chats.last_message mirrors the latest reply').toContain(rxMarker)
+    // chats.last_message should now reflect the trainee reply (poll: the
+    // mirror update trails the realtime echo).
+    await expect
+      .poll(async () => (await getChat(rxRow!.chat_id))?.last_message ?? '', { timeout: 15_000 })
+      .toContain(rxMarker)
     // chats.last_message is a single string, so it cannot carry both the
     // outgoing and reply text. We confirm the trainer outgoing is *still in
     // messages* (not overwritten), and use getMessageByText for the rest.

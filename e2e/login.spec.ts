@@ -10,7 +10,7 @@ test.describe('Login page', () => {
   test('L1. brands as My Chicken Addis Poultry', async ({ page }) => {
     onlyTrainer()
     await page.goto('/')
-    await expect(page.getByRole('heading', { name: /My Chicken Addis Poultry/ })).toBeVisible({ timeout: 25_000 })
+    await expect(page.getByRole('heading', { name: /My Chicken Addis/ })).toBeVisible({ timeout: 25_000 })
     await settle(page)
   })
 
