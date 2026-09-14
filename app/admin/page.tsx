@@ -27,6 +27,8 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
 } from '@/components/ui/alert-dialog';
+import { Tabs, TabsList, TabsTab, TabsPanel } from '@/components/ui/tabs';
+import { RoleBars, RevenueTrend, ResponseDonut, TeamActivity } from '@/components/insights-charts';
 
 interface AdminUser {
   id: string;
@@ -372,7 +374,7 @@ export default function AdminDashboard() {
 
       <main className="flex-1 px-6" aria-busy={loading}>
         {/* Stats */}
-        <div className="flex gap-4 overflow-x-auto no-scrollbar py-2 mb-6" role="status" aria-label={loading ? 'Loading stats' : 'Stats'}>
+        <div className="grid grid-cols-3 gap-3 sm:gap-4 py-2 mb-6" role="status" aria-label={loading ? 'Loading stats' : 'Stats'}>
           <StatTile label="Trainers" value={loading ? undefined : trainers.length} icon={<UserPlus className="w-4 h-4" />} />
           <StatTile label="Trainees" value={loading ? undefined : trainees.length} icon={<Users className="w-4 h-4" />} />
           <StatTile label="CEOs" value={loading ? undefined : admins.length} icon={<Building2 className="w-4 h-4" />} />
@@ -389,12 +391,17 @@ export default function AdminDashboard() {
               Insights unavailable
             </div>
           ) : (
-            <div className="grid gap-3">
-              <div className="flex gap-4 overflow-x-auto no-scrollbar py-1">
+            <Tabs defaultValue="messaging" className="grid gap-3">
+              <TabsList aria-label="Insight categories" className="w-full">
+                <TabsTab value="messaging" data-testid="insights-tab-messaging" className="flex-1">Messaging</TabsTab>
+                <TabsTab value="satisfaction" data-testid="insights-tab-satisfaction" className="flex-1">Satisfaction</TabsTab>
+                <TabsTab value="revenue" data-testid="insights-tab-revenue" className="flex-1">Revenue</TabsTab>
+                <TabsTab value="team" data-testid="insights-tab-team" className="flex-1">Team</TabsTab>
+              </TabsList>
+              <TabsPanel value="messaging" className="grid gap-3">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 <StatTile label="Avg reply" value={insights.reply_time.avg_reply_display_chat} icon={<Clock className="w-4 h-4" />} testId="insights-avg-reply" />
                 <StatTile label="Inquiry reply" value={insights.reply_time.avg_inquiry_display} icon={<MessageSquare className="w-4 h-4" />} testId="insights-inquiry-reply" />
-                <StatTile label="Satisfaction" value={`${insights.satisfaction.score}%`} icon={<Star className="w-4 h-4" />} testId="insights-csat" />
-                <StatTile label="Revenue / mo" value={`${insights.revenue.monthly_revenue_etb.toLocaleString()} ETB`} icon={<Banknote className="w-4 h-4" />} testId="insights-revenue" />
                 <StatTile label="Unreplied" value={insights.messaging.unreplied_count} icon={<Activity className="w-4 h-4" />} testId="insights-unreplied-count" />
               </div>
 
@@ -406,6 +413,17 @@ export default function AdminDashboard() {
                 <p className="text-xs text-muted-foreground mt-1">
                   Reply time from {insights.reply_time.replies_counted} chat replies · {insights.reply_time.inquiries_counted} inquiry replies
                 </p>
+              </div>
+
+              <div className="bg-card border border-border rounded-3xl p-5 shadow-sm">
+                <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-3">Messages by role</p>
+                <RoleBars
+                  data={[
+                    { name: 'Supervisors', value: insights.messaging.messages_by_role.trainer ?? 0 },
+                    { name: 'Farmers', value: insights.messaging.messages_by_role.trainee ?? 0 },
+                    { name: 'Admins', value: insights.messaging.messages_by_role.admin ?? 0 },
+                  ]}
+                />
               </div>
 
               <div className="bg-card border border-border rounded-3xl p-5 shadow-sm">
@@ -449,12 +467,46 @@ export default function AdminDashboard() {
                   </ul>
                 )}
               </div>
+              </TabsPanel>
+
+              <TabsPanel value="satisfaction" className="grid gap-3">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                <StatTile label="Satisfaction" value={`${insights.satisfaction.score}%`} icon={<Star className="w-4 h-4" />} testId="insights-csat" />
+                <StatTile label="Response rate" value={`${insights.satisfaction.response_rate}%`} icon={<MessageSquare className="w-4 h-4" />} testId="insights-response-rate" />
+                <StatTile label="Active farmers" value={`${insights.satisfaction.active_rate}%`} icon={<Users className="w-4 h-4" />} testId="insights-active-rate" />
+              </div>
+
+              <div className="bg-card border border-border rounded-3xl p-5 shadow-sm">
+                <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-3">Inquiries answered vs pending</p>
+                <ResponseDonut responded={insights.satisfaction.responded} pending={insights.messaging.pending_inquiries} />
+                <div className="mt-1 flex items-center justify-center gap-4 text-xs font-semibold text-muted-foreground">
+                  <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-full bg-[#15803d]" /> Answered</span>
+                  <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-full bg-[#f59e0b]" /> Pending</span>
+                </div>
+              </div>
 
               <div className="bg-card border border-border rounded-3xl p-5 shadow-sm">
                 <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-1">Customer satisfaction</p>
                 <p className="text-sm text-foreground" data-testid="insights-csat-detail">
                   {insights.satisfaction.score}% overall · {insights.satisfaction.response_rate}% inquiries answered · {insights.satisfaction.active_rate}% trainees active
                 </p>
+              </div>
+              </TabsPanel>
+
+              <TabsPanel value="revenue" className="grid gap-3">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                <StatTile label="Revenue / mo" value={`${insights.revenue.monthly_revenue_etb.toLocaleString()} ETB`} icon={<Banknote className="w-4 h-4" />} testId="insights-revenue" />
+                <StatTile label="Active subs" value={insights.revenue.active_subscriptions} icon={<Users className="w-4 h-4" />} testId="insights-active-subs" />
+                <StatTile label="Paid this mo" value={insights.revenue.paid_this_month} icon={<Activity className="w-4 h-4" />} testId="insights-paid-month" />
+              </div>
+
+              <div className="bg-card border border-border rounded-3xl p-5 shadow-sm">
+                <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-3">Revenue trend (ETB)</p>
+                {insights.revenue.monthly.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No payments recorded yet</p>
+                ) : (
+                  <RevenueTrend data={insights.revenue.monthly} />
+                )}
               </div>
 
               <div className="bg-card border border-border rounded-3xl p-5 shadow-sm">
@@ -466,6 +518,23 @@ export default function AdminDashboard() {
                   <p className="text-xs text-muted-foreground mt-1">
                     {insights.revenue.monthly.map((m) => `${m.name}: ${m.revenue.toLocaleString()}`).join(' · ')}
                   </p>
+                )}
+              </div>
+              </TabsPanel>
+
+              <TabsPanel value="team" className="grid gap-3">
+              <div className="bg-card border border-border rounded-3xl p-5 shadow-sm">
+                <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-3">Messages vs inquiry replies per supervisor</p>
+                {insights.employees.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No trainers yet</p>
+                ) : (
+                  <TeamActivity
+                    data={insights.employees.slice(0, 8).map((e) => ({
+                      name: e.display_name,
+                      messages: e.messages_sent,
+                      replies: e.inquiries_responded,
+                    }))}
+                  />
                 )}
               </div>
 
@@ -486,7 +555,8 @@ export default function AdminDashboard() {
                   </ul>
                 )}
               </div>
-            </div>
+              </TabsPanel>
+            </Tabs>
           )}
         </section>
 
@@ -755,15 +825,15 @@ export default function AdminDashboard() {
 
 function StatTile({ label, value, icon, testId }: { label: string; value: number | string | undefined; icon: React.ReactNode; testId?: string }) {
   return (
-    <div className="min-w-[140px] flex flex-col gap-2 rounded-3xl p-5 bg-card shadow-sm border border-border">
+    <div className="min-w-0 flex flex-col gap-2 rounded-3xl p-4 sm:p-5 bg-card shadow-sm border border-border">
       <div className="flex items-center gap-2">
-        <div className="size-8 rounded-full bg-success/15 flex items-center justify-center text-primary-foreground">{icon}</div>
-        <p className="text-muted-foreground text-xs font-bold uppercase tracking-wide">{label}</p>
+        <div className="size-8 shrink-0 rounded-full bg-success/15 flex items-center justify-center text-primary-foreground">{icon}</div>
+        <p className="text-muted-foreground text-xs font-bold uppercase tracking-wide truncate">{label}</p>
       </div>
       {value === undefined ? (
         <Skeleton className="h-9 w-14" />
       ) : (
-        <p className="text-3xl font-bold text-foreground" {...(testId ? { 'data-testid': testId } : {})}>{value}</p>
+        <p className="text-2xl sm:text-3xl font-bold text-foreground break-words" {...(testId ? { 'data-testid': testId } : {})}>{value}</p>
       )}
     </div>
   );

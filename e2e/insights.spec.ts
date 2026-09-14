@@ -7,7 +7,7 @@ test.describe('Admin insights & messaging analytics (UI ↔ API)', () => {
     test.skip(test.info().project.name !== 'admin', 'admin-only spec')
   })
 
-  test('I1. insights section renders with reply time, CSAT, revenue, employees', async ({ page }) => {
+  test('I1. tabbed insights render messaging, satisfaction, revenue, team', async ({ page }) => {
     await page.goto('/admin', { waitUntil: 'load' })
     await expect(page.getByRole('heading', { name: /Hi,.*CEO/ })).toBeVisible({ timeout: 60_000 })
     await settle(page)
@@ -16,31 +16,32 @@ test.describe('Admin insights & messaging analytics (UI ↔ API)', () => {
     await expect(insights).toBeVisible({ timeout: 30_000 })
     await expect(insights.getByText('Insights & messaging analytics')).toBeVisible()
 
-    // Core KPI tiles — values come from live /api/admin/insights
+    // Messaging tab (default): reply KPIs, volume, senders, unreplied.
     await expect(page.getByTestId('insights-avg-reply')).toBeVisible()
     await expect(page.getByTestId('insights-inquiry-reply')).toBeVisible()
-    await expect(page.getByTestId('insights-csat')).toBeVisible()
-    await expect(page.getByTestId('insights-revenue')).toBeVisible()
     await expect(page.getByTestId('insights-unreplied-count')).toBeVisible()
-
-    // Detail blocks render (volume, satisfaction, revenue, employees)
     await expect(page.getByTestId('insights-volume')).toBeVisible()
+    await expect(
+      page.getByTestId('insights-top-sender').first().or(insights.getByText('No messages yet')),
+    ).toBeVisible({ timeout: 20_000 })
+    await expect(
+      page.getByTestId('insights-unreplied').first().or(page.getByTestId('insights-unreplied-empty')),
+    ).toBeVisible({ timeout: 20_000 })
+
+    // Satisfaction tab.
+    await page.getByTestId('insights-tab-satisfaction').click()
+    await expect(page.getByTestId('insights-csat')).toBeVisible()
     await expect(page.getByTestId('insights-csat-detail')).toBeVisible()
+
+    // Revenue tab.
+    await page.getByTestId('insights-tab-revenue').click()
+    await expect(page.getByTestId('insights-revenue')).toBeVisible()
     await expect(page.getByTestId('insights-revenue-detail')).toBeVisible()
 
-    // Either senders or empty state, either unreplied items or inbox-zero
-    const topSenders = page.getByTestId('insights-top-sender')
-    const unreplied = page.getByTestId('insights-unreplied')
-    const inboxZero = page.getByTestId('insights-unreplied-empty')
-    const employees = page.getByTestId('insights-employee')
+    // Team tab.
+    await page.getByTestId('insights-tab-team').click()
     await expect(
-      topSenders.first().or(insights.getByText('No messages yet')),
-    ).toBeVisible({ timeout: 20_000 })
-    await expect(
-      unreplied.first().or(inboxZero),
-    ).toBeVisible({ timeout: 20_000 })
-    await expect(
-      employees.first().or(insights.getByText('No trainers yet')),
+      page.getByTestId('insights-employee').first().or(insights.getByText('No trainers yet')),
     ).toBeVisible({ timeout: 20_000 })
   })
 
