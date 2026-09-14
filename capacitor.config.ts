@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.addispoultry.app',
-  appName: 'AddisPoultry',
+  appName: 'My Chicken Addis Poultry',
   webDir: 'out',
   server: {
     androidScheme: 'https'

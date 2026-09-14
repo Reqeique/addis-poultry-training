@@ -54,7 +54,7 @@ async function findOrCreateChat(supabase: ReturnType<typeof createClient>, userI
     if (existingChat) return existingChat.chat_id as string;
   }
   const { data: newChat, error: chatError } = await supabase.from('chats').insert({}).select('id').single();
-  if (chatError || !newChat) throw new Error(chatError?.message || 'Could not create trainer chat.');
+  if (chatError || !newChat) throw new Error(chatError?.message || 'Could not create supervisor chat.');
   const { error: participantsError } = await supabase.from('chat_participants').insert([
     { chat_id: newChat.id, user_id: userId },
     { chat_id: newChat.id, user_id: peerId },
@@ -249,7 +249,7 @@ export default function AlertsPage() {
     <div className="flex min-h-svh w-full flex-col bg-background font-sans text-foreground pb-24">
       <header className="sticky top-0 z-10 border-b border-border bg-card px-6 pb-6 pt-10">
         <h1 className="font-heading text-2xl font-bold tracking-tight">Inquiry Alerts</h1>
-        <p className="mt-1 text-sm font-medium text-muted-foreground">Review trainee issues, media, and respond.</p>
+        <p className="mt-1 text-sm font-medium text-muted-foreground">Review farmer issues, media, and respond.</p>
       </header>
 
       <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 px-6 pt-6" aria-busy={loading}>
@@ -269,7 +269,7 @@ export default function AlertsPage() {
               <Bell className="size-7" />
             </span>
             <EmptyTitle>No inquiries yet</EmptyTitle>
-            <EmptyDescription>Trainee questions will appear here when they need your help.</EmptyDescription>
+            <EmptyDescription>Farmer questions will appear here when they need your help.</EmptyDescription>
           </Empty>
         ) : (
           <>
@@ -370,7 +370,7 @@ export default function AlertsPage() {
                       id="trainer-response"
                       value={responseText}
                       onChange={(event) => setResponseText(event.target.value)}
-                      placeholder="Type your response to the trainee..."
+                      placeholder="Type your response to the farmer..."
                     />
                     <div className="flex flex-wrap items-center gap-2">
                       <Button

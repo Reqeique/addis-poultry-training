@@ -10,7 +10,7 @@ const LEFT = [
 ];
 
 const RIGHT = [
-  { href: '/trainer/trainees', icon: Users, label: 'Trainees' },
+  { href: '/trainer/trainees', icon: Users, label: 'Farmers' },
   { href: '/trainer/alerts', icon: Bell, label: 'Alerts' },
   { href: '/trainer/settings', icon: Settings, label: 'Settings' },
 ];
@@ -61,7 +61,7 @@ export function TrainerBottomNav() {
         <div className="relative -top-5">
           <Link
             href="/trainer/trainees"
-            aria-label="Add trainee"
+            aria-label="Add farmer"
             className="flex size-14 items-center justify-center rounded-full border-4 border-background bg-primary text-primary-foreground shadow-[0_8px_16px_-6px_var(--primary)] transition-transform active:scale-95"
           >
             <Plus className="size-6" strokeWidth={3} />

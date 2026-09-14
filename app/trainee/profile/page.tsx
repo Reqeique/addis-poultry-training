@@ -379,7 +379,7 @@ export default function TraineeProfilePage() {
               <div className="bg-muted p-4 rounded-2xl">
                 <h4 className="font-bold text-foreground text-sm mb-1">How do I submit video inquiries?</h4>
                 <p className="text-xs text-muted-foreground leading-relaxed font-medium">
-                  Go to Home, write a description, tap the &quot;Video&quot; button to select a clip under 60 seconds, and tap &quot;Send to Trainer&quot;. We will compress and upload it to our secure R2 bucket.
+                  Go to Home, write a description, tap the &quot;Video&quot; button to select a clip under 60 seconds, and tap &quot;Send to Supervisor&quot;. We will compress and upload it to our secure R2 bucket.
                 </p>
               </div>
 

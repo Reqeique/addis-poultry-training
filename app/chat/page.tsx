@@ -520,7 +520,7 @@ function ChatContent() {
                       >
                         {msg.inquiry_id && (
                           <p className="mb-1 text-[10px] font-bold uppercase tracking-widest opacity-70">
-                            {msg.inquiry_urgency === 'High' ? 'High urgency inquiry' : 'Trainee inquiry'}
+                            {msg.inquiry_urgency === 'High' ? 'High urgency inquiry' : 'Farmer inquiry'}
                           </p>
                         )}
                         {msg.text && <p>{msg.text}</p>}
@@ -669,7 +669,7 @@ function ChatContent() {
               size="icon"
               aria-label="Send message"
               loading={isSending}
-              disabled={!newMessage.trim() && !imageFile && !audioBlob}
+              disabled={isSending || (!newMessage.trim() && !imageFile && !audioBlob)}
               className="shrink-0 rounded-lg"
             >
               <Send className="size-4" />

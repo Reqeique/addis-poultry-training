@@ -45,6 +45,6 @@ interface AppState {
 }
 
 export const useAppStore = create<AppState>((set) => ({
-  isAmharic: false,
+  isAmharic: true,
   setIsAmharic: (isAmharic) => set({ isAmharic }),
 }));

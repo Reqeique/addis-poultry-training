@@ -29,7 +29,7 @@ test.describe('Trainer dashboard', () => {
     const trainees = await listTraineesForTrainer(trainerId)
     expect(trainees.length, 'trainer must have assigned trainees in DB').toBeGreaterThan(0)
 
-    await expect(page.getByRole('heading', { name: 'Your Trainees' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Your Farmers' })).toBeVisible()
     for (const trainee of trainees) {
       await expect(
         page.getByRole('heading', { name: trainee.display_name, exact: true }),
@@ -45,20 +45,20 @@ test.describe('Trainer dashboard', () => {
     await expect(links, `"Tap to message" links should match DB trainee count`).toHaveCount(dbCount)
   })
 
-  test('B4. bottom nav routes to the trainee management page', async ({ page }) => {
-    await page.getByRole('link', { name: 'Trainees' }).click()
+  test('B4. bottom nav routes to the farmer management page', async ({ page }) => {
+    await page.getByRole('link', { name: 'Farmers' }).click()
     await expect(
-      page.getByRole('heading', { name: 'All Trainees' }),
-      'should land on the trainee management page',
+      page.getByRole('heading', { name: 'All Farmers' }),
+      'should land on the farmer management page',
     ).toBeVisible({ timeout: 15_000 })
     await expect(page).toHaveURL(/\/trainer\/trainees$/)
   })
 
-  test('C1. trainee management page renders the add-trainee form', async ({ page }) => {
+  test('C1. farmer management page renders the add-farmer form', async ({ page }) => {
     await page.goto('/trainer/trainees')
-    await expect(page.getByRole('heading', { name: 'Add trainee' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Add farmer' })).toBeVisible()
     await expect(page.getByRole('textbox', { name: 'Full name' })).toBeVisible()
     await expect(page.getByRole('textbox', { name: 'Phone number' })).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Add Trainee' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Add Farmer' })).toBeVisible()
   })
 })

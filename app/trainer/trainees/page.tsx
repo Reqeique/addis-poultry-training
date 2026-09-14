@@ -106,9 +106,9 @@ export default function TraineesPage() {
       });
 
       const result = await response.json();
-      if (!response.ok) throw new Error(result.error || 'Could not create trainee account.');
+      if (!response.ok) throw new Error(result.error || 'Could not create farmer account.');
 
-      setSuccess('Trainee added. They can now sign in with their phone number and password.');
+      setSuccess('Farmer added. They can now sign in with their phone number and password.');
       setForm({ displayName: '', phoneNumber: '', password: '', focusArea: '', farmSize: '', flockCount: '' });
 
       const { data } = await supabase
@@ -135,7 +135,7 @@ export default function TraineesPage() {
         }))
       );
     } catch (submitError: any) {
-      setError(submitError.message || 'Could not add trainee.');
+      setError(submitError.message || 'Could not add farmer.');
     } finally {
       setSubmitting(false);
     }
@@ -144,16 +144,16 @@ export default function TraineesPage() {
   return (
     <div className="flex min-h-svh w-full flex-col bg-background font-sans text-foreground pb-24">
       <header className="sticky top-0 z-10 border-b border-border bg-card px-6 pb-6 pt-10">
-        <h1 className="font-heading text-2xl font-bold tracking-tight">All Trainees</h1>
+        <h1 className="font-heading text-2xl font-bold tracking-tight">All Farmers</h1>
         <p className="mt-1 text-sm font-medium text-muted-foreground">
-          Manage your trainee roster and preload who can sign in.
+          Manage your farmer roster and preload who can sign in.
         </p>
       </header>
       <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-6 pt-6">
         <Card>
           <CardHeader>
-            <CardTitle>Add trainee</CardTitle>
-            <CardDescription>Each trainee gets a phone-based login backed by a password, with no OTP.</CardDescription>
+            <CardTitle>Add farmer</CardTitle>
+            <CardDescription>Each farmer gets a phone-based login backed by a password, with no OTP.</CardDescription>
           </CardHeader>
           <CardPanel className="flex flex-col gap-3">
             {error && (
@@ -236,7 +236,7 @@ export default function TraineesPage() {
               </Field>
               <Button type="submit" loading={submitting} className="mt-1">
                 <Sprout className="size-4" />
-                {submitting ? 'Adding...' : 'Add Trainee'}
+                {submitting ? 'Adding...' : 'Add Farmer'}
               </Button>
             </form>
           </CardPanel>
@@ -245,7 +245,7 @@ export default function TraineesPage() {
         <section>
           <div className="mb-3 flex items-center gap-2 px-1">
             <Users className="size-5 text-muted-foreground" />
-            <h2 className="font-heading text-lg font-bold">Preloaded trainees</h2>
+            <h2 className="font-heading text-lg font-bold">Preloaded farmers</h2>
             <Badge variant="secondary">{trainees.length}</Badge>
           </div>
 
@@ -268,8 +268,8 @@ export default function TraineesPage() {
               <span className="flex size-14 items-center justify-center rounded-full bg-muted text-muted-foreground">
                 <Users className="size-7" />
               </span>
-              <EmptyTitle>No Trainees Yet</EmptyTitle>
-              <EmptyDescription>Add a trainee above to create a phone login with a password for them.</EmptyDescription>
+              <EmptyTitle>No Farmers Yet</EmptyTitle>
+              <EmptyDescription>Add a farmer above to create a phone login with a password for them.</EmptyDescription>
             </Empty>
           ) : (
             <ul className="flex flex-col gap-2">

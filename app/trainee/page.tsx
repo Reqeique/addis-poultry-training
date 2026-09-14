@@ -25,21 +25,24 @@ const TRANSLATIONS: any = {
   en: {
     askExpert: "Ask Expert",
     howCanWeHelp: "How can we help?",
-    subtitle: "Submit a question or report an issue to your trainer.",
+    subtitle: "Submit a question or report an issue to your supervisor.",
     topic: "Topic",
     urgency: "Urgency",
     message: "Message",
     attachments: "Attachments (Optional)",
     placeholder: "Describe your question or issue in detail...",
-    send: "Send to Trainer",
+    send: "Send to Supervisor",
     success: "Sent Successfully!",
-    successSub: "Your trainer has been notified and will respond shortly.",
+    successSub: "Your supervisor has been notified and will respond shortly.",
     normal: "Normal",
     high: "High",
     home: "Home",
     profile: "Profile",
-    trainerMessage: "Message from Trainer",
-    noMessages: "No messages from trainer yet.",
+    trainerMessage: "Message from Supervisor",
+    noMessages: "No messages from supervisor yet.",
+    sessionsTitle: "Chat sessions",
+    sessionsEmpty: "No chat sessions yet — each question you send opens one here with full history.",
+    openSession: "Open chat session",
     camera: "Camera",
     gallery: "Gallery",
     voice: "Voice",
@@ -55,21 +58,24 @@ const TRANSLATIONS: any = {
   am: {
     askExpert: "ባለሙያ ይጠይቁ",
     howCanWeHelp: "እንዴት ልንረዳዎ እንችላለን?",
-    subtitle: "ጥያቄዎን ወይም ችግርዎን ለአሰልጣኝዎ ያቅርቡ።",
+    subtitle: "ጥያቄዎን ወይም ችግርዎን ለተቆጣጣሪዎ ያቅርቡ።",
     topic: "ርዕስ",
     urgency: "አስቸኳይነት",
     message: "መልእክት",
     attachments: "አባሪዎች (አማራጭ)",
     placeholder: "ጥያቄዎን ወይም ችግርዎን በዝርዝር ያብራሩ...",
-    send: "ለአሰልጣኝ ላክ",
+    send: "ለተቆጣጣሪ ላክ",
     success: "በተሳካ ሁኔታ ተልኳል!",
-    successSub: "አሰልጣኝዎ መልእክቱን አግኝተዋል እና በቅርቡ ምላሽ ይሰጣሉ።",
+    successSub: "ተቆጣጣሪዎ መልእክቱን አግኝተዋል እና በቅርቡ ምላሽ ይሰጣሉ።",
     normal: "መደበኛ",
     high: "ከፍተኛ",
     home: "ዋና ገጽ",
     profile: "መገለጫ",
-    trainerMessage: "ከአሰልጣኝ የመጣ መልእክት",
-    noMessages: "እስካሁን ከአሰልጣኝ ምንም መልእክት የለም።",
+    trainerMessage: "ከተቆጣጣሪ የመጣ መልእክት",
+    noMessages: "እስካሁን ከተቆጣጣሪ ምንም መልእክት የለም።",
+    sessionsTitle: "ውይይቶች",
+    sessionsEmpty: "እስካሁን ምንም ውይይት የለም — የሚልኩት ጥያቄ እዚህ ውይይት ይከፍታል።",
+    openSession: "ውይይቱን ክፈት",
     camera: "ካሜራ",
     gallery: "ጋለሪ",
     voice: "ድምጽ",
@@ -122,7 +128,7 @@ async function findOrCreateChat(supabase: ReturnType<typeof createClient>, userI
     .single();
 
   if (chatError || !newChat) {
-    throw new Error(chatError?.message || 'Could not create trainer chat.');
+    throw new Error(chatError?.message || 'Could not create supervisor chat.');
   }
 
   const { error: participantsError } = await supabase.from('chat_participants').insert([
@@ -169,6 +175,13 @@ export default function TraineeDashboard() {
     image?: string;
     response_audio_url?: string | null;
   } | null>(null);
+  const [sessions, setSessions] = useState<{
+    chatId: string;
+    peerId: string;
+    peerName: string;
+    lastMessage: string | null;
+    lastTime: string | null;
+  }[]>([]);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -276,6 +289,76 @@ export default function TraineeDashboard() {
     return () => {
       window.clearInterval(intervalId);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile]);
+
+  // Farmer chat sessions — every chat is a session with full history.
+  useEffect(() => {
+    if (!profile || profile.role !== 'trainee') return;
+
+    const fetchSessions = async () => {
+      const { data: mine } = await supabase
+        .from('chat_participants')
+        .select('chat_id')
+        .eq('user_id', profile.uid);
+
+      const chatIds = (mine ?? []).map((row) => row.chat_id);
+      if (chatIds.length === 0) {
+        setSessions([]);
+        return;
+      }
+
+      const { data: chats } = await supabase
+        .from('chats')
+        .select('id, last_message, last_message_time')
+        .in('id', chatIds)
+        .order('last_message_time', { ascending: false })
+        .limit(20);
+
+      const { data: parts } = await supabase
+        .from('chat_participants')
+        .select('chat_id, user_id')
+        .in('chat_id', chatIds);
+
+      const peerIds = [
+        ...new Set(
+          (parts ?? [])
+            .filter((p) => p.user_id !== profile.uid)
+            .map((p) => p.user_id),
+        ),
+      ];
+
+      const nameById = new Map<string, string>();
+      if (peerIds.length > 0) {
+        const { data: peers } = await supabase
+          .from('profiles')
+          .select('id, display_name')
+          .in('id', peerIds);
+        for (const p of peers ?? []) nameById.set(p.id, p.display_name);
+      }
+
+      const peerByChat = new Map<string, string>();
+      for (const p of parts ?? []) {
+        if (p.user_id !== profile.uid && !peerByChat.has(p.chat_id)) {
+          peerByChat.set(p.chat_id, p.user_id);
+        }
+      }
+
+      setSessions(
+        (chats ?? []).map((c) => {
+          const peerId = peerByChat.get(c.id) ?? profile.assignedTrainerId ?? '';
+          return {
+            chatId: c.id,
+            peerId,
+            peerName: nameById.get(peerId) ?? 'Supervisor',
+            lastMessage: c.last_message,
+            lastTime: c.last_message_time,
+          };
+        }),
+      );
+    };
+
+    void fetchSessions();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile]);
 
@@ -489,7 +572,7 @@ export default function TraineeDashboard() {
       }
 
       if (!profile.assignedTrainerId) {
-        throw new Error('No trainer is assigned to this trainee.');
+        throw new Error('No supervisor is assigned to this farmer.');
       }
 
       const { data: inquiry, error } = await supabase
@@ -595,14 +678,14 @@ export default function TraineeDashboard() {
           <div className="flex items-center gap-3">
             <Avatar className="size-12">
               {profile?.photoURL ? (
-                <AvatarImage src={profile.photoURL} alt="Trainee" />
+                <AvatarImage src={profile.photoURL} alt="Farmer" />
               ) : (
                 <AvatarFallback>{profile?.displayName?.trim() ? profile.displayName.substring(0, 2).toUpperCase() : 'TR'}</AvatarFallback>
               )}
             </Avatar>
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t.profile}</p>
-              <h1 className="font-heading text-xl font-bold tracking-tight">Hi, {profile?.displayName?.split(' ')[0] || 'Trainee'}</h1>
+              <h1 className="font-heading text-xl font-bold tracking-tight">Hi, {profile?.displayName?.split(' ')[0] || 'Farmer'}</h1>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -646,8 +729,8 @@ export default function TraineeDashboard() {
               <AlertDescription>
                 {isExpired
                   ? (lang === 'am'
-                    ? `ደንበኝነት ምዝገባዎ ${subscriptionExpiresAt ? format(subscriptionExpiresAt, 'MMM d, yyyy') : ''} ጀምሮ ቆሟል። ለማደስ አሰልጣኝዎን ያነጋግሩ።`
-                    : `Your subscription stopped on ${subscriptionExpiresAt ? format(subscriptionExpiresAt, 'MMM d, yyyy') : ''}. Contact your trainer to reactivate.`)
+                    ? `ደንበኝነት ምዝገባዎ ${subscriptionExpiresAt ? format(subscriptionExpiresAt, 'MMM d, yyyy') : ''} ጀምሮ ቆሟል። ለማደስ ተቆጣጣሪዎን ያነጋግሩ።`
+                    : `Your subscription stopped on ${subscriptionExpiresAt ? format(subscriptionExpiresAt, 'MMM d, yyyy') : ''}. Contact your supervisor to reactivate.`)
                   : (lang === 'am'
                     ? `ደንበኝነት ምዝገባዎ በ${daysLeft} ቀን ውስጥ ያልቃል።`
                     : `Your subscription expires in ${daysLeft} day${daysLeft === 1 ? '' : 's'}.`)}
@@ -669,6 +752,16 @@ export default function TraineeDashboard() {
               </span>
               <h3 className="font-heading text-2xl font-bold">{t.success}</h3>
               <p className="mt-2 max-w-[260px] leading-relaxed text-muted-foreground">{t.successSub}</p>
+              {profile?.assignedTrainerId && (
+                <Button
+                  type="button"
+                  size="lg"
+                  className="mt-6 w-full max-w-[260px]"
+                  onClick={() => router.push(`/chat?peerId=${profile.assignedTrainerId}`)}
+                >
+                  <span>{t.openSession}</span>
+                </Button>
+              )}
             </CardPanel>
           </Card>
         ) : (
@@ -805,6 +898,45 @@ export default function TraineeDashboard() {
             </Button>
           </form>
         )}
+
+        <section className="mt-8" data-testid="farmer-sessions" aria-label={t.sessionsTitle}>
+          <h2 className="font-heading text-xl font-bold tracking-tight">{t.sessionsTitle}</h2>
+          {sessions.length === 0 ? (
+            <Card className="mt-3">
+              <CardPanel className="p-5">
+                <p className="text-center text-sm font-medium italic text-muted-foreground">{t.sessionsEmpty}</p>
+              </CardPanel>
+            </Card>
+          ) : (
+            <ul className="mt-3 grid gap-2">
+              {sessions.map((s) => (
+                <li key={s.chatId}>
+                  <button
+                    type="button"
+                    data-testid="farmer-session"
+                    onClick={() => router.push(`/chat?peerId=${s.peerId}`)}
+                    className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-4 text-left shadow-sm transition-colors hover:border-primary/50"
+                  >
+                    <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary/15 text-sm font-bold text-primary">
+                      {s.peerName.substring(0, 2).toUpperCase()}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-bold">{s.peerName}</span>
+                      <span className="block truncate text-sm text-muted-foreground">
+                        {s.lastMessage || (lang === 'am' ? '(የሚዲያ መልእክት)' : '(media message)')}
+                      </span>
+                    </span>
+                    {s.lastTime && (
+                      <span className="shrink-0 text-xs font-medium text-muted-foreground">
+                        {format(new Date(s.lastTime), 'MMM d')}
+                      </span>
+                    )}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
         </>
         )}
       </main>

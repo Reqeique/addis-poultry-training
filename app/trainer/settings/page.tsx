@@ -162,12 +162,12 @@ export default function SettingsPage() {
         <DialogPopup>
           <DialogHeader>
             <DialogTitle>Notifications</DialogTitle>
-            <DialogDescription>Choose how you hear about urgent trainee issues.</DialogDescription>
+            <DialogDescription>Choose how you hear about urgent farmer issues.</DialogDescription>
           </DialogHeader>
           <DialogPanel className="flex flex-col gap-4">
             {[
-              { label: 'SMS Inquiry Alerts', hint: 'Text when trainee submits urgent issue', value: smsAlerts, set: setSmsAlerts },
-              { label: 'Email Reports', hint: 'Daily trainee performance updates', value: emailAlerts, set: setEmailAlerts },
+              { label: 'SMS Inquiry Alerts', hint: 'Text when farmer submits urgent issue', value: smsAlerts, set: setSmsAlerts },
+              { label: 'Email Reports', hint: 'Daily farmer performance updates', value: emailAlerts, set: setEmailAlerts },
               { label: 'Weekly Roster Digests', hint: 'Roster stats and inactive alarms', value: weeklyDigest, set: setWeeklyDigest },
             ].map((row) => (
               <div key={row.label} className="flex items-center justify-between gap-3">
@@ -197,14 +197,14 @@ export default function SettingsPage() {
         <DialogPopup>
           <DialogHeader>
             <DialogTitle>Privacy & Security</DialogTitle>
-            <DialogDescription>How trainee access and media are protected.</DialogDescription>
+            <DialogDescription>How farmer access and media are protected.</DialogDescription>
           </DialogHeader>
           <DialogPanel className="flex flex-col gap-3">
             <Card>
               <CardPanel className="p-4">
                 <p className="text-sm font-bold">Roster Locking</p>
                 <p className="mt-1 text-xs font-medium leading-relaxed text-muted-foreground">
-                  Only trainees pre-authenticated by you can register. Unknown phone numbers are blocked from signup.
+                  Only farmers pre-authenticated by you can register. Unknown phone numbers are blocked from signup.
                 </p>
               </CardPanel>
             </Card>

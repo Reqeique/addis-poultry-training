@@ -21,8 +21,16 @@ export async function waitForTrainerDashboard(page: Page) {
 }
 
 export async function waitForTraineeDashboard(page: Page) {
-  await page.getByRole('heading', { name: /Hi,|How can we help/ }).first().waitFor({ timeout: 30_000 })
+  await page.getByRole('heading', { name: /Hi,|How can we help|እንዴት/ }).first().waitFor({ timeout: 30_000 })
   await settle(page)
+}
+
+/** Farmer (trainee) UI defaults to Amharic — switch to English for English assertions. */
+export async function switchToEnglish(page: Page) {
+  const heading = page.getByRole('heading', { name: 'How can we help?' })
+  if (await heading.isVisible().catch(() => false)) return
+  await page.getByRole('button', { name: 'Toggle language' }).click()
+  await heading.waitFor({ timeout: 15_000 })
 }
 
 /** Random-but-stable marker for unique test data. */

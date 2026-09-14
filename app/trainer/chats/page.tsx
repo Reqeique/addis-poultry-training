@@ -79,7 +79,7 @@ export default function TrainerChatsPage() {
       <header className="sticky top-0 z-10 border-b border-border bg-card px-6 pt-12 pb-6">
         <h1 className="font-heading text-2xl font-bold tracking-tight">Recent chats</h1>
         <p className="mt-1 text-sm font-medium text-muted-foreground">
-          Pick up where you left off with your trainees.
+          Pick up where you left off with your farmers.
         </p>
         <div className="relative mt-4">
           <Search className="absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />

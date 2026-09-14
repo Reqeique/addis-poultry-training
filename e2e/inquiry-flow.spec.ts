@@ -1,7 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import path from 'node:path';
 import { getProfileByPhone, getInquiryByTrainee, getMessageByInquiry, getChat } from './db';
-import { settle } from './helpers';
+import { settle, switchToEnglish } from './helpers';
 
 const TRAINEE_PHONE = process.env.TRAINEE_PHONE || '+251922334455';
 const TRAINE_URL = process.env.BASE_URL || 'http://localhost:3002';
@@ -9,9 +9,8 @@ const PIXEL = path.resolve(__dirname, 'fixtures', 'pixel.png');
 
 async function goTraineeInquiry(page: Page) {
   await page.goto(`${TRAINE_URL}/trainee`);
-  await expect(page.getByRole('heading', { name: 'How can we help?' })).toBeVisible({
-    timeout: 20000,
-  });
+  // Farmer UI defaults to Amharic — switch to English for these assertions.
+  await switchToEnglish(page);
   await settle(page);
 }
 
@@ -31,7 +30,7 @@ test.describe('inquiry flow (UI ↔ Supabase)', () => {
     await page
       .getByPlaceholder('Describe your question or issue in detail...')
       .fill(`High priority question ${marker}`);
-    await page.getByRole('button', { name: 'Send to Trainer' }).click();
+    await page.getByRole('button', { name: 'Send to Supervisor' }).click();
 
     await expect(page.getByText('Sent Successfully!')).toBeVisible({ timeout: 10000 });
 
@@ -54,7 +53,7 @@ test.describe('inquiry flow (UI ↔ Supabase)', () => {
     await page
       .getByPlaceholder('Describe your question or issue in detail...')
       .fill(`With attachment ${marker}`);
-    await page.getByRole('button', { name: 'Send to Trainer' }).click();
+    await page.getByRole('button', { name: 'Send to Supervisor' }).click();
 
     await expect(page.getByText('Sent Successfully!')).toBeVisible({ timeout: 10000 });
 
@@ -74,7 +73,7 @@ test.describe('inquiry flow (UI ↔ Supabase)', () => {
     await page
       .getByPlaceholder('Describe your question or issue in detail...')
       .fill(`Chat message ${marker}`);
-    await page.getByRole('button', { name: 'Send to Trainer' }).click();
+    await page.getByRole('button', { name: 'Send to Supervisor' }).click();
 
     await expect(page.getByText('Sent Successfully!')).toBeVisible({ timeout: 10000 });
 

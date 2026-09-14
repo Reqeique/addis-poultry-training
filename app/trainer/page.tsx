@@ -243,7 +243,7 @@ export default function TrainerDashboard() {
           <div className="flex items-center gap-3">
             <Avatar className="size-12">
               {profile?.photoURL ? (
-                <AvatarImage src={profile.photoURL} alt="Trainer" />
+                <AvatarImage src={profile.photoURL} alt="Supervisor" />
               ) : (
                 <AvatarFallback>
                   {profile?.displayName?.trim()
@@ -254,13 +254,13 @@ export default function TrainerDashboard() {
             </Avatar>
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Trainer Dashboard
+                Supervisor Dashboard
               </p>
               {loading ? (
                 <Skeleton className="mt-1 h-6 w-32" aria-label="Loading greeting" />
               ) : (
                 <h1 className="font-heading text-xl font-bold tracking-tight">
-                  Hi, {profile?.displayName?.split(' ')[0] || 'Trainer'}
+                  Hi, {profile?.displayName?.split(' ')[0] || 'Supervisor'}
                 </h1>
               )}
             </div>
@@ -310,10 +310,10 @@ export default function TrainerDashboard() {
           <div className="mb-2">
             <Input
               type="search"
-              placeholder="Search trainees by name or focus area..."
+              placeholder="Search farmers by name or focus area..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              aria-label="Search trainees"
+              aria-label="Search farmers"
             />
           </div>
         )}
@@ -322,14 +322,14 @@ export default function TrainerDashboard() {
 
         <div className="mb-3 mt-8 flex items-center justify-between px-1">
           <h2 className="font-heading text-xl font-bold tracking-tight">
-            {searchQuery ? 'Filtered Trainees' : 'Your Trainees'}
+            {searchQuery ? 'Filtered Farmers' : 'Your Farmers'}
           </h2>
           <Button variant="link" size="sm" render={<Link href="/trainer/trainees" />}>
             Manage
           </Button>
         </div>
 
-        <div className="flex flex-col gap-3" role="status" aria-label={loading ? 'Loading trainees' : 'Trainees'}>
+        <div className="flex flex-col gap-3" role="status" aria-label={loading ? 'Loading farmers' : 'Farmers'}>
           {loading ? (
             [0, 1, 2].map((i) => (
               <Card key={i}>
@@ -347,11 +347,11 @@ export default function TrainerDashboard() {
               <span className="flex size-14 items-center justify-center rounded-full bg-muted text-muted-foreground">
                 <Users className="size-7" />
               </span>
-              <EmptyTitle>{searchQuery ? 'No matches found' : 'No Trainees Yet'}</EmptyTitle>
+              <EmptyTitle>{searchQuery ? 'No matches found' : 'No Farmers Yet'}</EmptyTitle>
               <EmptyDescription>
                 {searchQuery
-                  ? `We couldn't find any trainees matching "${searchQuery}"`
-                  : "You don't have any trainees assigned to you at the moment."}
+                  ? `We couldn't find any farmers matching "${searchQuery}"`
+                  : "You don't have any farmers assigned to you at the moment."}
               </EmptyDescription>
             </Empty>
           ) : (
@@ -535,7 +535,7 @@ export default function TrainerDashboard() {
               <DialogFooter>
                 <Button size="lg" className="w-full" render={<Link href={`/chat?peerId=${selectedTrainee.uid}`} />}>
                   <MessageSquare className="size-5" />
-                  Message Trainee
+                  Message Farmer
                 </Button>
               </DialogFooter>
             </>

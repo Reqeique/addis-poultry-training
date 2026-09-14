@@ -17,7 +17,7 @@ export function TraineeBottomNav({ isAmharic }: { isAmharic: boolean }) {
 
   const handleChatClick = () => {
     if (!profile?.assignedTrainerId) {
-      alert('No trainer has been assigned to you yet. Please contact support.');
+      alert('No supervisor has been assigned to you yet. Please contact support.');
       return;
     }
     router.push(`/chat?peerId=${profile.assignedTrainerId}`);
@@ -41,7 +41,7 @@ export function TraineeBottomNav({ isAmharic }: { isAmharic: boolean }) {
           <button
             type="button"
             onClick={handleChatClick}
-            aria-label="Chat with trainer"
+            aria-label="Chat with supervisor"
             className="flex size-14 items-center justify-center rounded-full border-4 border-background bg-primary text-primary-foreground shadow-[0_8px_16px_-6px_var(--primary)] transition-transform active:scale-95"
           >
             <Send className="size-5 -ml-0.5" />

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/store';
 import { useRouter } from 'next/navigation';
-import { Lock, Phone } from 'lucide-react';
+import { Lock, Phone, Eye, EyeOff } from 'lucide-react';
 
 import { buildPhoneLoginEmail, normalizePhoneNumber } from '@/lib/auth/phone-email';
 import { Logo } from '@/components/Logo';
@@ -18,6 +18,7 @@ import { Spinner } from '@/components/ui/spinner';
 export default function LoginPage() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { loading: authLoading } = useAuthStore();
@@ -38,7 +39,7 @@ export default function LoginPage() {
       if (signInError) throw signInError;
       router.push('/trainer');
     } catch (err: any) {
-      setError(err.message || 'Could not sign in as trainer.');
+      setError(err.message || 'Could not sign in as supervisor.');
     } finally {
       setLoading(false);
     }
@@ -58,7 +59,7 @@ export default function LoginPage() {
       if (signInError) throw signInError;
       router.push('/trainee');
     } catch (err: any) {
-      setError(err.message || 'Could not sign in as trainee.');
+      setError(err.message || 'Could not sign in as farmer.');
     } finally {
       setLoading(false);
     }
@@ -104,17 +105,17 @@ export default function LoginPage() {
         <div className="mb-6 text-center">
           <p className="mb-1 text-sm font-semibold text-muted-foreground">Hey 👋 there</p>
           <h1 className="font-heading text-3xl font-bold tracking-tight">
-            Welcome to <span className="text-primary">Addis Poultry</span>
+            Welcome to <span className="text-primary">My Chicken Addis Poultry</span>
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Sign in with your phone number to reach your trainer.
+            Sign in with your phone number to reach your supervisor.
           </p>
         </div>
 
         <Card>
           <CardHeader>
             <CardTitle>Sign in</CardTitle>
-            <CardDescription>Use the phone number your trainer registered for you.</CardDescription>
+            <CardDescription>Use the phone number your supervisor registered for you.</CardDescription>
           </CardHeader>
           <CardPanel className="flex flex-col gap-4">
             {error && (
@@ -147,14 +148,24 @@ export default function LoginPage() {
                   <Lock className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     id="password"
-                    className="pl-9"
+                    className="pl-9 pr-11"
                     placeholder="Password"
-                    type="password"
+                    aria-label="Password"
+                    type={showPassword ? 'text' : 'password'}
                     autoComplete="current-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((s) => !s)}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    aria-pressed={showPassword}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1.5 text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                  </button>
                 </span>
               </Field>
               <Button type="submit" size="lg" loading={loading} disabled={!phoneNumber || !password} className="mt-1 w-full">
@@ -164,11 +175,11 @@ export default function LoginPage() {
 
             <div className="flex items-center justify-center gap-2 text-xs font-semibold">
               <button type="button" onClick={handleBypassTrainer} className="text-muted-foreground hover:text-primary">
-                Try Trainer
+                Try Supervisor
               </button>
               <span className="text-border">•</span>
               <button type="button" onClick={handleBypassTrainee} className="text-muted-foreground hover:text-primary">
-                Try Trainee
+                Try Farmer
               </button>
             </div>
           </CardPanel>

@@ -12,7 +12,7 @@ const inter = Inter({subsets:['latin'],variable:'--font-sans'});
 const geistMono = Geist_Mono({subsets:['latin'],variable:'--font-mono'});
 
 export const metadata: Metadata = {
-  title: 'Addis Poultry Training',
+  title: 'My Chicken Addis Poultry',
   description: 'A streamlined communication platform for poultry farmers and trainers.',
 };
 
