@@ -1,53 +1,55 @@
-import * as React from 'react';
-import Image from 'next/image';
-import { cn } from '@/lib/utils';
+"use client";
 
-function Avatar({
+import { Avatar as AvatarPrimitive } from "@base-ui/react/avatar";
+import type React from "react";
+import { cn } from "@/lib/utils";
+
+export function Avatar({
   className,
   ...props
-}: React.HTMLAttributes<HTMLSpanElement>) {
+}: AvatarPrimitive.Root.Props): React.ReactElement {
   return (
-    <span
-      data-slot="avatar"
+    <AvatarPrimitive.Root
       className={cn(
-        'relative flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-muted text-sm font-bold text-muted-foreground',
-        className
+        "relative isolate inline-flex size-8 shrink-0 select-none items-center justify-center overflow-hidden rounded-full bg-background align-middle font-medium text-xs",
+        className,
       )}
+      data-slot="avatar"
       {...props}
     />
   );
 }
 
-function AvatarImage({
-  src,
-  alt,
+export function AvatarImage({
+  className,
   ...props
-}: {
-  src: string;
-  alt: string;
-} & Omit<React.ComponentProps<typeof Image>, 'src' | 'alt'>) {
+}: AvatarPrimitive.Image.Props): React.ReactElement {
   return (
-    <Image
+    <AvatarPrimitive.Image
+      className={cn(
+        "absolute inset-0 z-10 size-full object-cover data-error:invisible data-loading:invisible",
+        className,
+      )}
       data-slot="avatar-image"
-      src={src}
-      alt={alt}
-      fill
-      className="object-cover"
-      unoptimized
-      referrerPolicy="no-referrer"
       {...props}
     />
   );
 }
 
-function AvatarFallback({ className, ...props }: React.HTMLAttributes<HTMLSpanElement>) {
+export function AvatarFallback({
+  className,
+  ...props
+}: AvatarPrimitive.Fallback.Props): React.ReactElement {
   return (
-    <span
+    <AvatarPrimitive.Fallback
+      className={cn(
+        "absolute inset-0 flex size-full items-center justify-center rounded-full bg-muted",
+        className,
+      )}
       data-slot="avatar-fallback"
-      className={cn('flex size-full items-center justify-center uppercase', className)}
       {...props}
     />
   );
 }
 
-export { Avatar, AvatarImage, AvatarFallback };
+export { AvatarPrimitive };

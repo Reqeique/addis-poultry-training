@@ -1,47 +1,64 @@
-import * as React from 'react';
-import { cva, type VariantProps } from 'class-variance-authority';
-import { cn } from '@/lib/utils';
+"use client";
 
-const badgeVariants = cva(
-  'inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors [&_svg]:size-3 [&_svg]:shrink-0',
+import { mergeProps } from "@base-ui/react/merge-props";
+import { useRender } from "@base-ui/react/use-render";
+import { cva, type VariantProps } from "class-variance-authority";
+import type React from "react";
+import { cn } from "@/lib/utils";
+
+export const badgeVariants = cva(
+  "relative inline-flex shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded-sm border border-transparent font-medium outline-none transition-shadow focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-64 [&_svg:not([class*='opacity-'])]:opacity-80 [&_svg:not([class*='size-'])]:size-3.5 sm:[&_svg:not([class*='size-'])]:size-3 [&_svg]:pointer-events-none [&_svg]:shrink-0 [button&,a&]:cursor-pointer [button&,a&]:pointer-coarse:after:absolute [button&,a&]:pointer-coarse:after:size-full [button&,a&]:pointer-coarse:after:min-h-11 [button&,a&]:pointer-coarse:after:min-w-11",
   {
+    defaultVariants: {
+      size: "default",
+      variant: "default",
+    },
     variants: {
-      variant: {
-        default: 'border-transparent bg-primary text-primary-foreground',
-        secondary: 'border-transparent bg-secondary text-secondary-foreground',
-        outline: 'border-border bg-background text-foreground',
-        destructive: 'border-transparent bg-destructive text-destructive-foreground',
-        error: 'border-transparent bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-300',
-        success:
-          'border-transparent bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300',
-        warning:
-          'border-transparent bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300',
-        info: 'border-transparent bg-blue-100 text-blue-800 dark:bg-blue-500/15 dark:text-blue-300',
-      },
       size: {
-        default: 'px-2.5 py-0.5 text-xs',
-        sm: 'px-2 py-px text-[11px]',
-        lg: 'px-3 py-1 text-[13px]',
+        default:
+          "h-5.5 min-w-5.5 px-[calc(--spacing(1)-1px)] text-sm sm:h-4.5 sm:min-w-4.5 sm:text-xs",
+        lg: "h-6.5 min-w-6.5 px-[calc(--spacing(1.5)-1px)] text-base sm:h-5.5 sm:min-w-5.5 sm:text-sm",
+        sm: "h-5 min-w-5 rounded-[.25rem] px-[calc(--spacing(1)-1px)] text-xs sm:h-4 sm:min-w-4 sm:text-[.625rem]",
+      },
+      variant: {
+        default:
+          "bg-primary text-primary-foreground [button&,a&]:hover:bg-primary/90",
+        destructive:
+          "bg-destructive text-white [button&,a&]:hover:bg-destructive/90",
+        error:
+          "bg-destructive/8 text-destructive-foreground dark:bg-destructive/16",
+        info: "bg-info/8 text-info-foreground dark:bg-info/16",
+        outline:
+          "border-input bg-background text-foreground dark:bg-input/32 [button&,a&]:hover:bg-accent/50 dark:[button&,a&]:hover:bg-input/48",
+        secondary:
+          "bg-secondary text-secondary-foreground [button&,a&]:hover:bg-secondary/90",
+        success: "bg-success/8 text-success-foreground dark:bg-success/16",
+        warning: "bg-warning/8 text-warning-foreground dark:bg-warning/16",
       },
     },
-    defaultVariants: { variant: 'default', size: 'default' },
-  }
+  },
 );
 
-export interface BadgeProps
-  extends React.HTMLAttributes<HTMLSpanElement>,
-    VariantProps<typeof badgeVariants> {
-  render?: React.ReactElement;
+export interface BadgeProps extends useRender.ComponentProps<"span"> {
+  variant?: VariantProps<typeof badgeVariants>["variant"];
+  size?: VariantProps<typeof badgeVariants>["size"];
 }
 
-function Badge({ className, variant, size, render, ...props }: BadgeProps) {
-  const classes = cn(badgeVariants({ variant, size }), className);
-  if (render) {
-    return React.cloneElement(render as React.ReactElement<any>, {
-      className: cn((render.props as any)?.className, classes),
-    });
-  }
-  return <span data-slot="badge" className={classes} {...props} />;
-}
+export function Badge({
+  className,
+  variant,
+  size,
+  render,
+  ...props
+}: BadgeProps): React.ReactElement {
+  const defaultProps = {
+    className: cn(badgeVariants({ className, size, variant })),
+    "data-slot": "badge",
+  };
 
-export { Badge, badgeVariants };
+  return useRender({
+    defaultTagName: "span",
+    props: mergeProps<"span">(defaultProps, props),
+    render,
+  });
+}

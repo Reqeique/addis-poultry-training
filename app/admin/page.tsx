@@ -3,8 +3,30 @@
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/lib/store';
 import { useRouter } from 'next/navigation';
-import { Users, UserPlus, LogOut, Building2, ChevronRight, Search } from 'lucide-react';
+import { Users, UserPlus, LogOut, Building2, ChevronRight, Search, Pencil, Trash2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Field, FieldLabel } from '@/components/ui/field';
+import { Switch } from '@/components/ui/switch';
+import {
+  Dialog,
+  DialogPopup,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogPanel,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogPopup,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+} from '@/components/ui/alert-dialog';
 
 interface AdminUser {
   id: string;
@@ -12,8 +34,13 @@ interface AdminUser {
   phone_number: string;
   role: 'trainer' | 'trainee' | 'admin';
   is_active: boolean;
+  focus_area: string | null;
+  farm_size: string | null;
+  flock_count: number | null;
   created_at: string;
 }
+
+type RoleFilter = 'trainer' | 'trainee' | 'admin';
 
 export default function AdminDashboard() {
   const { profile, loading: authLoading } = useAuthStore();
@@ -32,6 +59,24 @@ export default function AdminDashboard() {
   const [focusArea, setFocusArea] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Edit + delete state (full CRUD)
+  const [editing, setEditing] = useState<AdminUser | null>(null);
+  const [editForm, setEditForm] = useState({
+    displayName: '',
+    phoneNumber: '',
+    role: 'trainee' as RoleFilter,
+    focusArea: '',
+    farmSize: '',
+    flockCount: '',
+    isActive: true,
+  });
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<AdminUser | null>(null);
+  const [deletingBusy, setDeletingBusy] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [toast, setToast] = useState('');
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 10_000);
@@ -63,6 +108,11 @@ export default function AdminDashboard() {
       setLoading(false);
     }
   }
+
+  const showToast = (message: string) => {
+    setToast(message);
+    setTimeout(() => setToast(''), 3000);
+  };
 
   const handleLogout = async () => {
     const { createClient } = await import('@/lib/supabase/client');
@@ -98,10 +148,97 @@ export default function AdminDashboard() {
       setFocusArea('');
       setShowForm(false);
       await fetchUsers();
+      showToast('User created.');
     } catch (e: any) {
       setFormError(e.message || String(e));
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  function openEdit(user: AdminUser) {
+    setEditForm({
+      displayName: user.display_name,
+      phoneNumber: user.phone_number,
+      role: user.role,
+      focusArea: user.focus_area || '',
+      farmSize: user.farm_size || '',
+      flockCount: user.flock_count != null ? String(user.flock_count) : '',
+      isActive: user.is_active,
+    });
+    setEditError(null);
+    setEditing(user);
+  }
+
+  async function handleSaveEdit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editing) return;
+    setSavingEdit(true);
+    setEditError(null);
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: editing.id,
+          displayName: editForm.displayName,
+          phoneNumber: editForm.phoneNumber,
+          role: editForm.role,
+          focusArea: editForm.focusArea,
+          farmSize: editForm.farmSize,
+          flockCount: editForm.flockCount,
+          isActive: editForm.isActive,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error || 'Could not update user');
+      setEditing(null);
+      await fetchUsers();
+      showToast('User updated.');
+    } catch (e: any) {
+      setEditError(e.message || String(e));
+    } finally {
+      setSavingEdit(false);
+    }
+  }
+
+  async function handleToggleActive(user: AdminUser, next: boolean) {
+    setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, is_active: next } : u)));
+    setActionError(null);
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: user.id, isActive: next }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error || 'Could not update user');
+      showToast(next ? 'User activated.' : 'User deactivated.');
+    } catch (e: any) {
+      setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, is_active: !next } : u)));
+      setActionError(e.message || String(e));
+    }
+  }
+
+  async function handleConfirmDelete() {
+    if (!deleting) return;
+    setDeletingBusy(true);
+    setActionError(null);
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: deleting.id }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error || 'Could not delete user');
+      setDeleting(null);
+      await fetchUsers();
+      showToast('User deleted.');
+    } catch (e: any) {
+      setActionError(e.message || String(e));
+    } finally {
+      setDeletingBusy(false);
     }
   }
 
@@ -113,10 +250,16 @@ export default function AdminDashboard() {
   const trainers = filtered.filter((u) => u.role === 'trainer');
   const trainees = filtered.filter((u) => u.role === 'trainee');
   const admins = filtered.filter((u) => u.role === 'admin');
+  const selfId = profile?.uid ?? null;
 
   // Shell-first: header renders instantly, stats + lists shimmer while loading.
   return (
     <div className="flex min-h-screen w-full flex-col overflow-x-hidden bg-background font-sans text-foreground pb-24">
+      {toast && (
+        <div className="fixed left-1/2 top-6 z-[110] -translate-x-1/2 rounded-full border border-border bg-card px-5 py-2.5 text-sm font-semibold shadow-lg">
+          {toast}
+        </div>
+      )}
       <header className="flex items-center px-6 pt-12 pb-4 justify-between bg-background sticky top-0 z-10">
         <div className="flex items-center gap-4">
           <div className="size-12 rounded-full bg-primary/10 border border-border flex items-center justify-center text-primary-foreground font-bold">
@@ -161,6 +304,12 @@ export default function AdminDashboard() {
           <StatTile label="Trainees" value={loading ? undefined : trainees.length} icon={<Users className="w-4 h-4" />} />
           <StatTile label="CEOs" value={loading ? undefined : admins.length} icon={<Building2 className="w-4 h-4" />} />
         </div>
+
+        {actionError && (
+          <div className="mb-4 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive" role="alert">
+            {actionError}
+          </div>
+        )}
 
         {/* Register new user */}
         <section className="mb-6">
@@ -262,10 +411,159 @@ export default function AdminDashboard() {
           )}
         </section>
 
-        <UserList title={loading ? 'Trainers' : `Trainers (${trainers.length})`} users={loading ? [] : trainers} testPrefix="admin-trainer" loading={loading} />
-        <UserList title={loading ? 'Trainees' : `Trainees (${trainees.length})`} users={loading ? [] : trainees} testPrefix="admin-trainee" loading={loading} />
-        {!loading && admins.length > 0 && <UserList title={`CEOs (${admins.length})`} users={admins} testPrefix="admin-admin" />}
+        <UserList
+          title={loading ? 'Trainers' : `Trainers (${trainers.length})`}
+          users={loading ? [] : trainers}
+          testPrefix="admin-trainer"
+          loading={loading}
+          selfId={selfId}
+          onEdit={openEdit}
+          onToggle={handleToggleActive}
+          onDelete={setDeleting}
+        />
+        <UserList
+          title={loading ? 'Trainees' : `Trainees (${trainees.length})`}
+          users={loading ? [] : trainees}
+          testPrefix="admin-trainee"
+          loading={loading}
+          selfId={selfId}
+          onEdit={openEdit}
+          onToggle={handleToggleActive}
+          onDelete={setDeleting}
+        />
+        {!loading && admins.length > 0 && (
+          <UserList
+            title={`CEOs (${admins.length})`}
+            users={admins}
+            testPrefix="admin-admin"
+            selfId={selfId}
+            onEdit={openEdit}
+            onToggle={handleToggleActive}
+            onDelete={setDeleting}
+          />
+        )}
       </main>
+
+      <Dialog open={editing !== null} onOpenChange={(open) => !open && setEditing(null)}>
+        <DialogPopup data-testid="admin-edit-dialog">
+          {editing && (
+            <form onSubmit={handleSaveEdit}>
+              <DialogHeader>
+                <DialogTitle>Edit user</DialogTitle>
+                <DialogDescription>Update {editing.display_name}&apos;s account. Phone changes update their login.</DialogDescription>
+              </DialogHeader>
+              <DialogPanel className="flex flex-col gap-3">
+                {editError && (
+                  <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive" data-testid="admin-edit-error">
+                    {editError}
+                  </div>
+                )}
+                <Field>
+                  <FieldLabel htmlFor="admin-edit-name">Display name</FieldLabel>
+                  <Input
+                    id="admin-edit-name"
+                    value={editForm.displayName}
+                    onChange={(e) => setEditForm((f) => ({ ...f, displayName: e.target.value }))}
+                    required
+                    data-testid="admin-edit-displayName"
+                  />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="admin-edit-phone">Phone number</FieldLabel>
+                  <Input
+                    id="admin-edit-phone"
+                    value={editForm.phoneNumber}
+                    onChange={(e) => setEditForm((f) => ({ ...f, phoneNumber: e.target.value }))}
+                    required
+                    data-testid="admin-edit-phone"
+                  />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="admin-edit-role">Role</FieldLabel>
+                  <select
+                    id="admin-edit-role"
+                    value={editForm.role}
+                    onChange={(e) => setEditForm((f) => ({ ...f, role: e.target.value as RoleFilter }))}
+                    disabled={editing.id === selfId}
+                    title={editing.id === selfId ? 'You cannot change your own role' : undefined}
+                    className="h-10 w-full rounded-[var(--radius)] border border-input bg-background px-3 text-sm outline-none focus:border-ring disabled:opacity-50"
+                    data-testid="admin-edit-role"
+                  >
+                    <option value="trainee">Trainee</option>
+                    <option value="trainer">Trainer</option>
+                    <option value="admin">CEO</option>
+                  </select>
+                </Field>
+                <div className="grid grid-cols-2 gap-3">
+                  <Field>
+                    <FieldLabel htmlFor="admin-edit-focus">Focus area</FieldLabel>
+                    <Input
+                      id="admin-edit-focus"
+                      value={editForm.focusArea}
+                      onChange={(e) => setEditForm((f) => ({ ...f, focusArea: e.target.value }))}
+                      data-testid="admin-edit-focusArea"
+                    />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="admin-edit-farm">Farm size</FieldLabel>
+                    <Input
+                      id="admin-edit-farm"
+                      value={editForm.farmSize}
+                      onChange={(e) => setEditForm((f) => ({ ...f, farmSize: e.target.value }))}
+                      data-testid="admin-edit-farmSize"
+                    />
+                  </Field>
+                </div>
+                <Field>
+                  <FieldLabel htmlFor="admin-edit-flock">Flock count</FieldLabel>
+                  <Input
+                    id="admin-edit-flock"
+                    type="number"
+                    min="0"
+                    value={editForm.flockCount}
+                    onChange={(e) => setEditForm((f) => ({ ...f, flockCount: e.target.value }))}
+                    data-testid="admin-edit-flockCount"
+                  />
+                </Field>
+                <div className="flex items-center justify-between rounded-xl border border-border bg-muted/50 px-4 py-3">
+                  <span className="text-sm font-semibold">Account active</span>
+                  <Switch
+                    checked={editForm.isActive}
+                    onCheckedChange={(next) => setEditForm((f) => ({ ...f, isActive: next }))}
+                    disabled={editing.id === selfId}
+                    aria-label={editing.id === selfId ? 'Cannot deactivate your own account' : 'Account active'}
+                    data-testid="admin-edit-active"
+                  />
+                </div>
+              </DialogPanel>
+              <DialogFooter>
+                <Button type="submit" loading={savingEdit} className="w-full" data-testid="admin-edit-save">
+                  Save changes
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogPopup>
+      </Dialog>
+
+      <AlertDialog open={deleting !== null} onOpenChange={(open) => !open && !deletingBusy && setDeleting(null)}>
+        <AlertDialogPopup data-testid="admin-delete-dialog">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {deleting?.display_name}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes their profile and login. Users with chat or inquiry history cannot be deleted — deactivate them instead.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <Button variant="outline" onClick={() => setDeleting(null)} disabled={deletingBusy}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleConfirmDelete} loading={deletingBusy} data-testid="admin-delete-confirm">
+              Delete user
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogPopup>
+      </AlertDialog>
     </div>
   );
 }
@@ -286,7 +584,25 @@ function StatTile({ label, value, icon }: { label: string; value: number | undef
   );
 }
 
-function UserList({ title, users, testPrefix, loading = false }: { title: string; users: AdminUser[]; testPrefix: string; loading?: boolean }) {
+function UserList({
+  title,
+  users,
+  testPrefix,
+  loading = false,
+  selfId,
+  onEdit,
+  onToggle,
+  onDelete,
+}: {
+  title: string;
+  users: AdminUser[];
+  testPrefix: string;
+  loading?: boolean;
+  selfId: string | null;
+  onEdit: (user: AdminUser) => void;
+  onToggle: (user: AdminUser, next: boolean) => void;
+  onDelete: (user: AdminUser) => void;
+}) {
   return (
     <section className="mb-6">
       <h2 className="text-base font-bold text-foreground mb-3">{title}</h2>
@@ -303,24 +619,55 @@ function UserList({ title, users, testPrefix, loading = false }: { title: string
           ))
         ) : users.length === 0 ? (
           <li className="px-5 py-6 rounded-2xl bg-card border border-border text-muted-foreground text-center text-sm">No users yet</li>
-        ) : users.map((u) => (
-          <li
-            key={u.id}
-            className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-card border border-border shadow-sm"
-            data-testid={testPrefix}
-          >
-            <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center text-primary-foreground font-bold">
-              {u.display_name?.substring(0, 2).toUpperCase()}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-foreground truncate">{u.display_name}</p>
-              <p className="text-sm text-muted-foreground">{u.phone_number}</p>
-            </div>
-            <span className={`text-xs font-bold uppercase tracking-wide ${u.is_active ? 'text-primary-foreground' : 'text-muted-foreground'}`}>
-              {u.is_active ? 'Active' : 'Inactive'}
-            </span>
-          </li>
-        ))}
+        ) : users.map((u) => {
+          const isSelf = selfId != null && u.id === selfId;
+          return (
+            <li
+              key={u.id}
+              className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-card border border-border shadow-sm"
+              data-testid={testPrefix}
+            >
+              <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center text-primary-foreground font-bold">
+                {u.display_name?.substring(0, 2).toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-foreground truncate">{u.display_name}</p>
+                <p className="text-sm text-muted-foreground">{u.phone_number}</p>
+              </div>
+              <div className="flex shrink-0 items-center gap-1">
+                <Switch
+                  checked={u.is_active}
+                  onCheckedChange={(next) => onToggle(u, next)}
+                  disabled={isSelf}
+                  aria-label={isSelf ? 'Cannot change your own account' : `${u.is_active ? 'Deactivate' : 'Activate'} ${u.display_name}`}
+                  data-testid={`${testPrefix}-active`}
+                />
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label={`Edit ${u.display_name}`}
+                  title={isSelf && u.role === 'admin' ? undefined : `Edit ${u.display_name}`}
+                  onClick={() => onEdit(u)}
+                  data-testid={`${testPrefix}-edit`}
+                >
+                  <Pencil className="size-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label={`Delete ${u.display_name}`}
+                  className="text-destructive"
+                  disabled={isSelf}
+                  title={isSelf ? 'You cannot delete your own account' : `Delete ${u.display_name}`}
+                  onClick={() => onDelete(u)}
+                  data-testid={`${testPrefix}-delete`}
+                >
+                  <Trash2 className="size-4" />
+                </Button>
+              </div>
+            </li>
+          );
+        })}
       </ul>
     </section>
   );

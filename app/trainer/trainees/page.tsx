@@ -157,7 +157,7 @@ export default function TraineesPage() {
           </CardHeader>
           <CardPanel className="flex flex-col gap-3">
             {error && (
-              <Alert variant="destructive">
+              <Alert variant="error">
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}

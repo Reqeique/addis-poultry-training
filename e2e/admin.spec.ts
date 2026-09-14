@@ -82,8 +82,7 @@ test.describe('CEO dashboard (UI ↔ Supabase)', () => {
     expect(profile!.role).toBe('trainer')
   })
 
-  test('A4. non-admin (trainer) hitting /admin is redirected away', async ({ browser }) => {
-    // Use the trainer session
+  test('A4. non-admin (trainer) hitting /admin is redirected away', async ({ browser }) => {    // Use the trainer session
     const ctx = await browser.newContext({
       storageState: (require('node:path') as typeof import('node:path')).resolve(__dirname, '..', 'e2e', '.auth', 'trainer.json'),
     })
@@ -93,5 +92,41 @@ test.describe('CEO dashboard (UI ↔ Supabase)', () => {
     await page.waitForURL((url) => !url.pathname.startsWith('/admin'), { timeout: 30_000 })
     expect(page.url()).not.toMatch(/\/admin/)
     await ctx.close()
+  })
+
+  test('A5. CEO edits then deletes a user — full CRUD round-trip', async ({ page }) => {
+    await page.goto('/admin', { waitUntil: 'load' })
+    await expect(page.getByRole('heading', { name: /Hi,.*CEO/ })).toBeVisible({ timeout: 60_000 })
+    await settle(page)
+
+    // Create a fresh user to mutate (no history → deletable).
+    const phone = `+2517${(Date.now() % 100_000_000).toString().padStart(8, '0').slice(-8)}`
+    const name = `E2E Crud ${Date.now()}`
+    await page.getByTestId('admin-toggle-form').click()
+    await page.getByTestId('admin-displayName').fill(name)
+    await page.getByTestId('admin-phone').fill(phone)
+    await page.getByTestId('admin-password').fill('Crud1234!')
+    await page.getByTestId('admin-submit').click()
+    const row = page.getByTestId('admin-trainee').filter({ hasText: name })
+    await expect(row).toBeVisible({ timeout: 20_000 })
+
+    // UPDATE: rename via the edit dialog.
+    const renamed = `${name} Renamed`
+    await row.getByTestId('admin-trainee-edit').click()
+    await expect(page.getByTestId('admin-edit-dialog')).toBeVisible({ timeout: 10_000 })
+    await page.getByTestId('admin-edit-displayName').fill(renamed)
+    await page.getByTestId('admin-edit-save').click()
+    await expect(page.getByTestId('admin-trainee').filter({ hasText: renamed })).toBeVisible({ timeout: 20_000 })
+    const updated = await getProfileByPhone(phone)
+    expect(updated, 'renamed profile must exist in DB').not.toBeNull()
+
+    // DELETE: confirm removal.
+    const renamedRow = page.getByTestId('admin-trainee').filter({ hasText: renamed })
+    await renamedRow.getByTestId('admin-trainee-delete').click()
+    await expect(page.getByTestId('admin-delete-dialog')).toBeVisible({ timeout: 10_000 })
+    await page.getByTestId('admin-delete-confirm').click()
+    await expect(page.getByTestId('admin-trainee').filter({ hasText: renamed })).toHaveCount(0, { timeout: 20_000 })
+    const gone = await getProfileByPhone(phone)
+    expect(gone, 'deleted profile must be gone from DB').toBeNull()
   })
 })

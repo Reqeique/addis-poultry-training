@@ -2,17 +2,14 @@ import type { Metadata } from 'next';
 import './globals.css'; // Global styles (coss ui design tokens)
 import { AuthProvider } from '@/components/auth-provider';
 
-import { Manrope, Geist_Mono } from 'next/font/google';
+import { Geist_Mono, Inter } from 'next/font/google';
+import { cn } from "@/lib/utils";
 
-const sans = Manrope({
-  subsets: ['latin'],
-  variable: '--font-sans',
-});
+const interHeading = Inter({subsets:['latin'],variable:'--font-heading'});
 
-const mono = Geist_Mono({
-  subsets: ['latin'],
-  variable: '--font-mono',
-});
+const inter = Inter({subsets:['latin'],variable:'--font-sans'});
+
+const geistMono = Geist_Mono({subsets:['latin'],variable:'--font-mono'});
 
 export const metadata: Metadata = {
   title: 'Addis Poultry Training',
@@ -21,7 +18,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="am-ET" className={`${sans.variable} ${mono.variable}`}>
+    <html lang="am-ET" className={cn("font-sans", inter.variable, interHeading.variable, geistMono.variable)}>
       <body className="font-sans relative" suppressHydrationWarning>
         {/* Isolation wrapper per coss ui / Base UI: portaled overlays
             (dialogs, sheets, popovers) always paint above page content. */}

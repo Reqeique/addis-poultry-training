@@ -635,7 +635,7 @@ export default function TraineeDashboard() {
         ) : (
         <>
         {(isExpired || isExpiringSoon) && (
-          <Alert variant={isExpired ? 'destructive' : 'warning'} className="mb-4 flex items-start gap-3">
+          <Alert variant={isExpired ? 'error' : 'warning'} className="mb-4 flex items-start gap-3">
             <span className="mt-0.5 shrink-0">{isExpired ? <AlertTriangle className="size-4" /> : <Clock className="size-4" />}</span>
             <span>
               <span className="block font-bold">

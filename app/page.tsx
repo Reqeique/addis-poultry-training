@@ -118,7 +118,7 @@ export default function LoginPage() {
           </CardHeader>
           <CardPanel className="flex flex-col gap-4">
             {error && (
-              <Alert variant="destructive">
+              <Alert variant="error">
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}

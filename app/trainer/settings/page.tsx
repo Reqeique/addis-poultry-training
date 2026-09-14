@@ -175,7 +175,7 @@ export default function SettingsPage() {
                   <p className="text-sm font-bold">{row.label}</p>
                   <p className="text-xs font-medium text-muted-foreground">{row.hint}</p>
                 </div>
-                <Switch checked={row.value} onCheckedChange={row.set} label={row.label} />
+                <Switch checked={row.value} onCheckedChange={row.set} aria-label={row.label} />
               </div>
             ))}
           </DialogPanel>

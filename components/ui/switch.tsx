@@ -1,47 +1,30 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import { cn } from '@/lib/utils';
+import { Switch as SwitchPrimitive } from "@base-ui/react/switch";
+import type React from "react";
+import { cn } from "@/lib/utils";
 
-function Switch({
-  checked,
-  onCheckedChange,
-  disabled,
+export function Switch({
   className,
-  label,
-}: {
-  checked: boolean;
-  onCheckedChange?: (checked: boolean) => void;
-  disabled?: boolean;
-  className?: string;
-  label?: string;
-}) {
+  ...props
+}: SwitchPrimitive.Root.Props): React.ReactElement {
   return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      aria-label={label}
-      disabled={disabled}
-      onClick={() => onCheckedChange?.(!checked)}
-      data-slot="switch"
-      data-state={checked ? 'checked' : 'unchecked'}
+    <SwitchPrimitive.Root
       className={cn(
-        'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border border-transparent transition-colors outline-none',
-        'focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
-        checked ? 'bg-primary' : 'bg-input',
-        className
+        "inline-flex h-[calc(var(--thumb-size)+2px)] w-[calc(var(--thumb-size)*2-2px)] shrink-0 items-center rounded-full p-px outline-none transition-[background-color,box-shadow] duration-200 [--thumb-size:--spacing(5)] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background data-disabled:cursor-not-allowed data-checked:bg-primary data-unchecked:bg-input data-disabled:opacity-64 sm:[--thumb-size:--spacing(4)]",
+        className,
       )}
+      data-slot="switch"
+      {...props}
     >
-      <span
-        data-slot="switch-thumb"
+      <SwitchPrimitive.Thumb
         className={cn(
-          'block size-5 rounded-full bg-white shadow transition-transform',
-          checked ? 'translate-x-[22px]' : 'translate-x-[2px]'
+          "pointer-events-none block aspect-square h-full origin-left in-[[role=switch]:active,[data-slot=label]:active,[data-slot=field-label]:active]:not-data-disabled:scale-x-110 in-[[role=switch]:active,[data-slot=label]:active,[data-slot=field-label]:active]:rounded-[var(--thumb-size)/calc(var(--thumb-size)*1.1)] rounded-(--thumb-size) bg-background shadow-sm/5 will-change-transform [transition:translate_.15s,border-radius_.15s,scale_.1s_.1s,transform-origin_.15s] data-checked:origin-[var(--thumb-size)_50%] data-checked:translate-x-[calc(var(--thumb-size)-4px)]",
         )}
+        data-slot="switch-thumb"
       />
-    </button>
+    </SwitchPrimitive.Root>
   );
 }
 
-export { Switch };
+export { SwitchPrimitive };

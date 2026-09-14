@@ -440,7 +440,7 @@ export default function TrainerDashboard() {
 
                       <Switch
                         checked={isActive}
-                        label={isActive ? 'Deactivate trainee' : 'Activate trainee'}
+                        aria-label={isActive ? 'Deactivate trainee' : 'Activate trainee'}
                         onCheckedChange={(next) => {
                           if (next) activateSubscription(trainee);
                           else deactivateTrainee(trainee);
