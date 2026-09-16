@@ -1,82 +1,47 @@
 'use client';
-import Link from 'next/link';
-import { Home, Users, Settings, Plus, MessageSquare, Bell } from 'lucide-react';
-import { usePathname } from 'next/navigation';
-import { cn } from '@/lib/utils';
+import { Home, Users, Settings, MessageSquare, Bell } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { Tabs, TabsList, TabsTab } from '@/components/ui/tabs';
 
-const LEFT = [
-  { href: '/trainer', icon: Home, label: 'Home' },
-  { href: '/trainer/chats', icon: MessageSquare, label: 'Messages' },
+const ITEMS = [
+  { value: '/trainer', icon: Home, label: 'Home' },
+  { value: '/trainer/chats', icon: MessageSquare, label: 'Chats' },
+  { value: '/trainer/trainees', icon: Users, label: 'Farmers' },
+  { value: '/trainer/alerts', icon: Bell, label: 'Alerts' },
+  { value: '/trainer/settings', icon: Settings, label: 'Settings' },
 ];
 
-const RIGHT = [
-  { href: '/trainer/trainees', icon: Users, label: 'Farmers' },
-  { href: '/trainer/alerts', icon: Bell, label: 'Alerts' },
-  { href: '/trainer/settings', icon: Settings, label: 'Settings' },
-];
-
-function NavLink({
-  href,
-  label,
-  active,
-  children,
-}: {
-  href: string;
-  label: string;
-  active: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <Link
-      href={href}
-      aria-label={label}
-      aria-current={active ? 'page' : undefined}
-      className={cn(
-        'flex min-w-[52px] flex-col items-center gap-1 rounded-lg px-1 py-1 text-[10px] font-bold transition-colors',
-        active ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
-      )}
-    >
-      {children}
-      <span>{label}</span>
-    </Link>
-  );
+function valueForPath(pathname: string): string {
+  const hit = ITEMS.find((i) => pathname === i.value || pathname.startsWith(`${i.value}/`));
+  return hit ? hit.value : '/trainer';
 }
 
 export function TrainerBottomNav() {
   const pathname = usePathname();
+  const router = useRouter();
+  const value = valueForPath(pathname);
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card pb-safe">
-      <div className="mx-auto flex max-w-lg items-end justify-around px-3 py-2">
-        {LEFT.map((item) => {
-          const Icon = item.icon;
-          const active = pathname === item.href;
-          return (
-            <NavLink key={item.href} href={item.href} label={item.label} active={active}>
-              <Icon className="size-5" />
-            </NavLink>
-          );
-        })}
-
-        <div className="relative -top-5">
-          <Link
-            href="/trainer/trainees"
-            aria-label="Add farmer"
-            className="flex size-14 items-center justify-center rounded-full border-4 border-background bg-primary text-primary-foreground shadow-[0_8px_16px_-6px_var(--primary)] transition-transform active:scale-95"
-          >
-            <Plus className="size-6" strokeWidth={3} />
-          </Link>
-        </div>
-
-        {RIGHT.map((item) => {
-          const Icon = item.icon;
-          const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
-          return (
-            <NavLink key={item.href} href={item.href} label={item.label} active={active}>
-              <Icon className="size-5" />
-            </NavLink>
-          );
-        })}
+    <nav aria-label="Supervisor sections" className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card pb-safe">
+      <div className="mx-auto flex max-w-lg justify-center px-3 py-2">
+        <Tabs value={value} onValueChange={(v) => router.push(v)} className="w-full max-w-md">
+          <TabsList aria-label="Supervisor sections" className="w-full">
+            {ITEMS.map((item) => {
+              const Icon = item.icon;
+              return (
+                <TabsTab
+                  key={item.value}
+                  value={item.value}
+                  aria-label={item.label}
+                  className="min-w-0 flex-1 shrink flex-col gap-0.5 px-0 py-1 text-[9px] font-bold uppercase tracking-wide"
+                >
+                  <Icon className="size-5" />
+                  <span className="truncate">{item.label}</span>
+                </TabsTab>
+              );
+            })}
+          </TabsList>
+        </Tabs>
       </div>
     </nav>
   );

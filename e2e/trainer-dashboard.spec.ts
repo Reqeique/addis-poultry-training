@@ -19,9 +19,9 @@ test.describe('Trainer dashboard', () => {
 
   test('B1. dashboard greets trainer and shows stat tiles', async ({ page }) => {
     await expect(page.getByRole('heading', { name: /Hi,/ })).toBeVisible()
-    await expect(page.getByText('Total', { exact: true })).toBeVisible()
-    await expect(page.getByText('Active', { exact: true })).toBeVisible()
-    await expect(page.getByText('Chats', { exact: true })).toBeVisible()
+    await expect(page.locator('main').getByText('Total', { exact: true })).toBeVisible()
+    await expect(page.locator('main').getByText('Active', { exact: true })).toBeVisible()
+    await expect(page.locator('main').getByText('Chats', { exact: true })).toBeVisible()
   })
 
   test('B2. all assigned trainee cards are listed', async ({ page }) => {
@@ -46,7 +46,7 @@ test.describe('Trainer dashboard', () => {
   })
 
   test('B4. bottom nav routes to the farmer management page', async ({ page }) => {
-    await page.getByRole('link', { name: 'Farmers' }).click()
+    await page.getByRole('tab', { name: 'Farmers' }).click()
     await expect(
       page.getByRole('heading', { name: 'All Farmers' }),
       'should land on the farmer management page',

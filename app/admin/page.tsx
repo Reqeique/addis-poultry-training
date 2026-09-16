@@ -303,9 +303,9 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      <main className="mx-auto w-full max-w-2xl lg:max-w-4xl flex-1 px-4 sm:px-6" aria-busy={loading}>
+      <main className="mx-auto w-full max-w-2xl lg:max-w-4xl flex-1 min-w-0 px-4 sm:px-6" aria-busy={loading}>
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-3 sm:gap-4 py-2 mb-6" role="status" aria-label={loading ? 'Loading stats' : 'Stats'}>
+        <div className="grid min-w-0 grid-cols-3 gap-2 sm:gap-4 py-2 mb-6" role="status" aria-label={loading ? 'Loading stats' : 'Stats'}>
           <StatTile label="Trainers" value={loading ? undefined : trainers.length} icon={<UserPlus className="w-4 h-4" />} />
           <StatTile label="Trainees" value={loading ? undefined : trainees.length} icon={<Users className="w-4 h-4" />} />
           <StatTile label="CEOs" value={loading ? undefined : admins.length} icon={<Building2 className="w-4 h-4" />} />
@@ -600,9 +600,9 @@ function UserList({
   onDelete: (user: AdminUser) => void;
 }) {
   return (
-    <section className="mb-6">
+    <section className="mb-6 min-w-0">
       <h2 className="text-base font-bold text-foreground mb-3">{title}</h2>
-      <ul className="grid gap-2" data-testid={`${testPrefix}-list`}>
+      <ul className="grid min-w-0 gap-2" data-testid={`${testPrefix}-list`}>
         {loading ? (
           [0, 1].map((i) => (
             <li key={i} className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-card border border-border">
@@ -624,10 +624,10 @@ function UserList({
           return (
             <li
               key={u.id}
-              className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-card border border-border shadow-sm"
+              className="flex min-w-0 max-w-full items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3 rounded-2xl bg-card border border-border shadow-sm overflow-hidden"
               data-testid={testPrefix}
             >
-              <Avatar className="size-10 bg-primary/10">
+              <Avatar className="size-10 shrink-0 bg-primary/10">
                 <AvatarFallback className="bg-primary/10 font-bold text-primary-foreground">
                   {u.display_name?.substring(0, 2).toUpperCase()}
                 </AvatarFallback>

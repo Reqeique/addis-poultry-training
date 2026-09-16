@@ -48,7 +48,7 @@ export default function AdminInsightsPage() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-2xl lg:max-w-4xl flex-1 px-4 sm:px-6">
+      <main className="mx-auto w-full max-w-2xl lg:max-w-4xl flex-1 min-w-0 px-4 sm:px-6">
         {ready ? (
           <AdminInsights />
         ) : (

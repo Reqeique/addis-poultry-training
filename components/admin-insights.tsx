@@ -112,7 +112,7 @@ export function AdminInsights() {
   const monthlyShown = revenueRange === '6m' ? monthlyAll.slice(-6) : monthlyAll.slice(-12);
 
   return (
-        <section className="mb-6" data-testid="admin-insights" aria-label="Insights and messaging analytics">
+        <section className="mb-6 min-w-0 w-full max-w-full overflow-hidden" data-testid="admin-insights" aria-label="Insights and messaging analytics">
           <div className="mb-3 flex items-center justify-between gap-2">
             <h2 className="text-base font-bold text-foreground">Insights & messaging analytics</h2>
             <div className="flex shrink-0 items-center gap-2">
@@ -150,24 +150,24 @@ export function AdminInsights() {
               </EmptyHeader>
             </Empty>
           ) : (
-            <Tabs defaultValue="messaging" className="grid gap-3">
-              <TabsList aria-label="Insight categories" className="w-full max-w-full">
-                <TabsTab value="messaging" data-testid="insights-tab-messaging" className="min-w-0 flex-1 shrink px-1 text-[13px] sm:text-sm">Messaging</TabsTab>
-                <TabsTab value="satisfaction" data-testid="insights-tab-satisfaction" className="min-w-0 flex-1 shrink px-1 text-[13px] sm:text-sm">Satisfaction</TabsTab>
-                <TabsTab value="revenue" data-testid="insights-tab-revenue" className="min-w-0 flex-1 shrink px-1 text-[13px] sm:text-sm">Revenue</TabsTab>
-                <TabsTab value="team" data-testid="insights-tab-team" className="min-w-0 flex-1 shrink px-1 text-[13px] sm:text-sm">Team</TabsTab>
+            <Tabs defaultValue="messaging" className="grid gap-3 min-w-0 w-full max-w-full">
+              <TabsList aria-label="Insight categories" className="w-full max-w-full min-w-0">
+                <TabsTab value="messaging" data-testid="insights-tab-messaging" className="min-w-0 flex-1 shrink px-0.5 text-xs sm:text-sm">Messaging</TabsTab>
+                <TabsTab value="satisfaction" data-testid="insights-tab-satisfaction" className="min-w-0 flex-1 shrink px-0.5 text-xs sm:text-sm">Satisfaction</TabsTab>
+                <TabsTab value="revenue" data-testid="insights-tab-revenue" className="min-w-0 flex-1 shrink px-0.5 text-xs sm:text-sm">Revenue</TabsTab>
+                <TabsTab value="team" data-testid="insights-tab-team" className="min-w-0 flex-1 shrink px-0.5 text-xs sm:text-sm">Team</TabsTab>
               </TabsList>
-              <TabsPanel value="messaging" className="grid gap-3">
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <TabsPanel value="messaging" className="grid gap-3 min-w-0 w-full max-w-full overflow-hidden">
+              <div className="grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
                 <StatTile label="Avg reply" value={insights.reply_time.avg_reply_display_chat} icon={<Clock className="w-4 h-4" />} testId="insights-avg-reply" />
                 <StatTile label="Inquiry reply" value={insights.reply_time.avg_inquiry_display} icon={<MessageSquare className="w-4 h-4" />} testId="insights-inquiry-reply" />
                 <StatTile label="Unreplied" value={insights.messaging.unreplied_count} icon={<Activity className="w-4 h-4" />} testId="insights-unreplied-count" />
               </div>
 
-            <Card>
-              <CardPanel className="p-5">
+            <Card className="min-w-0 max-w-full overflow-hidden">
+              <CardPanel className="min-w-0 p-4 sm:p-5">
                 <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-1">Messaging volume</p>
-                <p className="text-sm text-foreground" data-testid="insights-volume">
+                <p className="text-sm text-foreground break-words" data-testid="insights-volume">
                   {insights.messaging.total_messages} messages · {insights.messaging.messages_by_role.trainer ?? 0} trainer · {insights.messaging.messages_by_role.trainee ?? 0} trainee · {insights.messaging.responded_inquiries}/{insights.messaging.total_inquiries} inquiries answered
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
@@ -176,8 +176,8 @@ export function AdminInsights() {
               </CardPanel>
             </Card>
 
-            <Card>
-              <CardPanel className="p-5">
+            <Card className="min-w-0 max-w-full overflow-hidden">
+              <CardPanel className="min-w-0 p-4 sm:p-5">
                 <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-3">Messages by role</p>
                 <RoleBars
                   data={[
@@ -189,22 +189,22 @@ export function AdminInsights() {
               </CardPanel>
             </Card>
 
-            <Card>
-              <CardPanel className="p-5">
-                <div className="mb-3 flex items-center justify-between gap-2">
-                  <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Top senders</p>
-                  <Button variant="outline" size="sm" onClick={() => router.push('/admin/chats')}>
+            <Card className="min-w-0 max-w-full overflow-hidden">
+              <CardPanel className="min-w-0 p-4 sm:p-5">
+                <div className="mb-3 flex min-w-0 items-center justify-between gap-2">
+                  <p className="min-w-0 truncate text-xs font-bold uppercase tracking-wide text-muted-foreground">Top senders</p>
+                  <Button variant="outline" size="sm" className="shrink-0" onClick={() => router.push('/admin/chats')}>
                     Open chat sessions
                   </Button>
                 </div>
                 {topSenders.length === 0 ? (
                   <Empty className="gap-1 py-4 md:py-4"><EmptyDescription>No messages yet</EmptyDescription></Empty>
                 ) : (
-                  <ul className="grid gap-2">
+                  <ul className="grid min-w-0 gap-2">
                     {topSenders.slice(0, 5).map((s) => (
-                      <li key={s.id} data-testid="insights-top-sender" className="flex items-center justify-between text-sm">
-                        <span className="font-semibold text-foreground truncate">{s.display_name} <span className="text-muted-foreground font-normal">· {s.role}</span></span>
-                        <span className="text-muted-foreground font-bold">{s.count}</span>
+                      <li key={s.id} data-testid="insights-top-sender" className="flex min-w-0 items-center justify-between gap-2 text-sm">
+                        <span className="min-w-0 font-semibold text-foreground truncate">{s.display_name} <span className="text-muted-foreground font-normal">· {s.role}</span></span>
+                        <span className="text-muted-foreground font-bold shrink-0">{s.count}</span>
                       </li>
                     ))}
                   </ul>
@@ -212,24 +212,24 @@ export function AdminInsights() {
               </CardPanel>
             </Card>
 
-            <Card>
-              <CardPanel className="p-5">
+            <Card className="min-w-0 max-w-full overflow-hidden">
+              <CardPanel className="min-w-0 p-4 sm:p-5">
                 <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-3">
                   Waiting for a reply ({insights.messaging.unreplied_count})
                 </p>
                 {unrepliedChats.length === 0 && pendingList.length === 0 ? (
                   <Empty className="gap-1 py-4 md:py-4" data-testid="insights-unreplied-empty"><EmptyDescription>Inbox zero — everyone got a reply</EmptyDescription></Empty>
                 ) : (
-                  <ul className="grid gap-2">
+                  <ul className="grid min-w-0 gap-2">
                     {unrepliedChats.slice(0, 5).map((c) => (
-                      <li key={c.chat_id} data-testid="insights-unreplied" className="text-sm border border-border rounded-2xl px-3 py-2">
+                      <li key={c.chat_id} data-testid="insights-unreplied" className="text-sm border border-border rounded-2xl px-3 py-2 min-w-0 max-w-full overflow-hidden">
                         <p className="font-semibold text-foreground truncate">{c.last_sender_name} → {c.waiting_on}</p>
                         <p className="text-muted-foreground truncate">{c.last_message || '(media message)'}</p>
                         <p className="text-xs text-amber-600 font-semibold">waiting {c.hours_waiting}h</p>
                       </li>
                     ))}
                     {pendingList.slice(0, 5).map((q) => (
-                      <li key={q.id} data-testid="insights-unreplied" className="text-sm border border-border rounded-2xl px-3 py-2">
+                      <li key={q.id} data-testid="insights-unreplied" className="text-sm border border-border rounded-2xl px-3 py-2 min-w-0 max-w-full overflow-hidden">
                         <p className="font-semibold text-foreground truncate">{q.trainee_name} — pending inquiry</p>
                         <p className="text-muted-foreground truncate">{q.message}</p>
                         <p className="text-xs text-amber-600 font-semibold">waiting {q.hours_waiting}h</p>
@@ -241,44 +241,44 @@ export function AdminInsights() {
             </Card>
               </TabsPanel>
 
-              <TabsPanel value="satisfaction" className="grid gap-3">
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <TabsPanel value="satisfaction" className="grid gap-3 min-w-0 w-full max-w-full overflow-hidden">
+              <div className="grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
                 <StatTile label="Satisfaction" value={`${insights.satisfaction.score}%`} icon={<Star className="w-4 h-4" />} testId="insights-csat" />
                 <StatTile label="Response rate" value={`${insights.satisfaction.response_rate}%`} icon={<MessageSquare className="w-4 h-4" />} testId="insights-response-rate" />
                 <StatTile label="Active farmers" value={`${insights.satisfaction.active_rate}%`} icon={<Users className="w-4 h-4" />} testId="insights-active-rate" />
               </div>
 
-            <Card>
-              <CardPanel className="p-5">
+            <Card className="min-w-0 max-w-full overflow-hidden">
+              <CardPanel className="min-w-0 p-4 sm:p-5">
                 <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-3">Inquiries answered vs pending</p>
                 <ResponseDonut responded={insights.satisfaction.responded} pending={insights.messaging.pending_inquiries} />
                 <div className="mt-1 flex items-center justify-center gap-4 text-xs font-semibold text-muted-foreground">
-                  <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-full bg-[#15803d]" /> Answered</span>
+                  <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-full bg-[#0284c7]" /> Answered</span>
                   <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-full bg-[#f59e0b]" /> Pending</span>
                 </div>
               </CardPanel>
             </Card>
 
-            <Card>
-              <CardPanel className="p-5">
+            <Card className="min-w-0 max-w-full overflow-hidden">
+              <CardPanel className="min-w-0 p-4 sm:p-5">
                 <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-1">Customer satisfaction</p>
-                <p className="text-sm text-foreground" data-testid="insights-csat-detail">
+                <p className="text-sm text-foreground break-words" data-testid="insights-csat-detail">
                   {insights.satisfaction.score}% overall · {insights.satisfaction.response_rate}% inquiries answered · {insights.satisfaction.active_rate}% trainees active
                 </p>
               </CardPanel>
             </Card>
               </TabsPanel>
 
-              <TabsPanel value="revenue" className="grid gap-3">
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <TabsPanel value="revenue" className="grid gap-3 min-w-0 w-full max-w-full overflow-hidden">
+              <div className="grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
                 <StatTile label="Revenue / mo" value={`${insights.revenue.monthly_revenue_etb.toLocaleString()} ETB`} icon={<Banknote className="w-4 h-4" />} testId="insights-revenue" />
                 <StatTile label="Active subs" value={insights.revenue.active_subscriptions} icon={<Users className="w-4 h-4" />} testId="insights-active-subs" />
                 <StatTile label="Paid this mo" value={insights.revenue.paid_this_month} icon={<Activity className="w-4 h-4" />} testId="insights-paid-month" />
               </div>
 
-            <Card>
-              <CardPanel className="p-5">
-                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <Card className="min-w-0 max-w-full overflow-hidden">
+              <CardPanel className="min-w-0 p-4 sm:p-5">
+                <div className="mb-3 flex min-w-0 flex-wrap items-center justify-between gap-2">
                   <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Revenue trend (ETB)</p>
                   <div className="flex gap-1" role="group" aria-label="Revenue period">
                     <Button
@@ -307,14 +307,14 @@ export function AdminInsights() {
               </CardPanel>
             </Card>
 
-            <Card>
-              <CardPanel className="p-5">
+            <Card className="min-w-0 max-w-full overflow-hidden">
+              <CardPanel className="min-w-0 p-4 sm:p-5">
                 <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-1">Revenue generated</p>
-                <p className="text-sm text-foreground" data-testid="insights-revenue-detail">
+                <p className="text-sm text-foreground break-words" data-testid="insights-revenue-detail">
                   {insights.revenue.monthly_revenue_etb.toLocaleString()} ETB/mo from {insights.revenue.active_subscriptions} active × {insights.revenue.price_etb.toLocaleString()} ETB · {insights.revenue.paid_this_month} paid this month
                 </p>
                 {monthlyShown.length > 0 && (
-                  <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-xs text-muted-foreground mt-1 break-words">
                     {monthlyShown.map((m) => `${m.name}: ${m.revenue.toLocaleString()}`).join(' · ')}
                   </p>
                 )}
@@ -322,9 +322,9 @@ export function AdminInsights() {
             </Card>
               </TabsPanel>
 
-              <TabsPanel value="team" className="grid gap-3">
-            <Card>
-              <CardPanel className="p-5">
+              <TabsPanel value="team" className="grid gap-3 min-w-0 w-full max-w-full overflow-hidden">
+            <Card className="min-w-0 max-w-full overflow-hidden">
+              <CardPanel className="min-w-0 p-4 sm:p-5">
                 <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-3">Messages vs inquiry replies per supervisor</p>
                 {employees.length === 0 ? (
                   <Empty className="gap-1 py-4 md:py-4"><EmptyDescription>No trainers yet</EmptyDescription></Empty>
@@ -340,16 +340,16 @@ export function AdminInsights() {
               </CardPanel>
             </Card>
 
-            <Card>
-              <CardPanel className="p-5">
+            <Card className="min-w-0 max-w-full overflow-hidden">
+              <CardPanel className="min-w-0 p-4 sm:p-5">
                 <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-3">Employee activity</p>
                 {employees.length === 0 ? (
                   <Empty className="gap-1 py-4 md:py-4"><EmptyDescription>No trainers yet</EmptyDescription></Empty>
                 ) : (
-                  <ul className="grid gap-2">
+                  <ul className="grid min-w-0 gap-2">
                     {employees.slice(0, 8).map((e) => (
-                      <li key={e.id} data-testid="insights-employee" className="flex items-center justify-between text-sm gap-2">
-                        <span className="font-semibold text-foreground truncate">{e.display_name}</span>
+                      <li key={e.id} data-testid="insights-employee" className="flex min-w-0 max-w-full items-center justify-between overflow-hidden text-sm gap-2">
+                        <span className="min-w-0 font-semibold text-foreground truncate">{e.display_name}</span>
                         <span className="text-xs text-muted-foreground shrink-0">
                           {e.trainees_assigned} trainees · {e.messages_sent} msgs · {e.inquiries_responded} replies
                         </span>

@@ -17,8 +17,8 @@ export const metadata: Metadata = {
   description: 'A streamlined communication platform for poultry farmers and trainers.',
   manifest: '/manifest.webmanifest',
   icons: {
-    icon: '/icon',
-    apple: '/apple-icon',
+    icon: '/icon.svg',
+    apple: '/icon.svg',
   },
   appleWebApp: {
     capable: true,

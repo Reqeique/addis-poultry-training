@@ -47,9 +47,9 @@ test.describe('Trainee dashboard', () => {
   })
 
   test('B4. bottom nav routes to the profile page', async ({ page }) => {
-    const profileLink = page.getByRole('link', { name: 'PROFILE' })
-    await profileLink.scrollIntoViewIfNeeded()
-    await profileLink.click()
+    const profileTab = page.getByRole('tab', { name: 'PROFILE' })
+    await profileTab.scrollIntoViewIfNeeded()
+    await profileTab.click()
     await expect(page).toHaveURL(/\/trainee\/profile$/, { timeout: 15_000 })
   })
 

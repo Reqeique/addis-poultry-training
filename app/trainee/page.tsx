@@ -682,7 +682,7 @@ export default function TraineeDashboard() {
   return (
     <div className="flex min-h-svh w-full flex-col bg-background font-sans text-foreground pb-24">
       <header className="sticky top-0 z-10 border-b border-border bg-card">
-        <div className="flex items-center justify-between px-6 pb-4 pt-10">
+        <div className="flex items-center justify-between px-4 sm:px-6 pb-4 pt-10">
           <div className="flex items-center gap-3">
             <Avatar className="size-12">
               {profile?.photoURL ? (
@@ -707,7 +707,7 @@ export default function TraineeDashboard() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-2xl flex-1 px-6 pt-4" aria-busy={loading}>
+      <main className="mx-auto w-full max-w-2xl flex-1 min-w-0 px-4 sm:px-6 pt-4" aria-busy={loading}>
         {loading ? (
           <div className="flex flex-col gap-4" role="status" aria-label="Loading">
             <div>
@@ -755,7 +755,7 @@ export default function TraineeDashboard() {
         {submitted ? (
           <Card>
             <CardPanel className="flex flex-col items-center py-12 text-center">
-              <span className="mb-4 flex size-16 items-center justify-center rounded-full bg-success/15 text-success">
+              <span className="mb-4 flex size-16 items-center justify-center rounded-full bg-primary/15 text-primary">
                 <CheckCircle2 className="size-8" />
               </span>
               <h3 className="font-heading text-2xl font-bold">{t.success}</h3>

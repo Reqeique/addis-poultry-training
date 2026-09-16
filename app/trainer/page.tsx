@@ -50,15 +50,15 @@ function StatCard({
   value: React.ReactNode;
 }) {
   return (
-    <Card className="min-w-[140px] flex-1">
-      <CardPanel className="flex flex-col gap-2 p-4">
-        <span className="flex items-center gap-2">
-          <span className="flex size-8 items-center justify-center rounded-full bg-muted text-foreground">
+    <Card className="min-w-0 max-w-full flex-1 overflow-hidden">
+      <CardPanel className="flex min-w-0 flex-col gap-2 p-3 sm:p-4">
+        <span className="flex min-w-0 items-center gap-1.5">
+          <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-muted text-foreground sm:size-8">
             {icon}
           </span>
-          <span className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{label}</span>
+          <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wide text-muted-foreground truncate min-w-0">{label}</span>
         </span>
-        <span className="font-heading text-3xl font-bold">{value}</span>
+        <span className="font-heading text-2xl sm:text-3xl font-bold break-words min-w-0">{value}</span>
       </CardPanel>
     </Card>
   );
@@ -281,8 +281,8 @@ export default function TrainerDashboard() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-2xl flex-1 px-6" aria-busy={loading}>
-        <div className="no-scrollbar -mx-1 flex gap-3 overflow-x-auto px-1 py-4" role="status" aria-label={loading ? 'Loading stats' : 'Stats'}>
+      <main className="mx-auto w-full max-w-2xl flex-1 min-w-0 px-4 sm:px-6" aria-busy={loading}>
+        <div className="flex min-w-0 gap-2 sm:gap-3 px-0 sm:px-1 py-4" role="status" aria-label={loading ? 'Loading stats' : 'Stats'}>
           <StatCard
             icon={<Users className="size-4" />}
             label="Total"
