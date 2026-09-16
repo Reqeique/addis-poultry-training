@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css'; // Global styles (coss ui design tokens)
 import { AuthProvider } from '@/components/auth-provider';
 import { ToastProvider } from '@/components/ui/toast';
@@ -15,6 +15,24 @@ const geistMono = Geist_Mono({subsets:['latin'],variable:'--font-mono'});
 export const metadata: Metadata = {
   title: 'My Chicken Addis',
   description: 'A streamlined communication platform for poultry farmers and trainers.',
+  manifest: '/manifest.webmanifest',
+  icons: {
+    icon: '/icon',
+    apple: '/apple-icon',
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'My Chicken Addis',
+  },
+  formatDetection: { telephone: false },
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+  themeColor: '#0284c7',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

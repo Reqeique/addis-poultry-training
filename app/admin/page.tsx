@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/lib/store';
 import { useRouter } from 'next/navigation';
-import { Users, UserPlus, LogOut, Building2, ChevronRight, Search, Pencil, Trash2 } from 'lucide-react';
+import { Users, UserPlus, LogOut, Building2, ChevronRight, Search, Pencil, Trash2, RefreshCw } from 'lucide-react';
 import { AdminBottomNav } from '@/components/AdminBottomNav';
 import { StatTile } from '@/components/stat-tile';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -261,17 +261,17 @@ export default function AdminDashboard() {
   // Shell-first: header renders instantly, stats + lists shimmer while loading.
   return (
     <div className="flex min-h-screen w-full flex-col overflow-x-hidden bg-background font-sans text-foreground pb-24">
-      <header className="flex items-center px-6 pt-12 pb-4 justify-between bg-background sticky top-0 z-10">
-        <div className="flex items-center gap-4">
-          <div className="size-12 rounded-full bg-primary/10 border border-border flex items-center justify-center text-primary-foreground font-bold">
+      <header className="flex items-center px-4 sm:px-6 pt-12 pb-4 justify-between bg-background sticky top-0 z-10">
+        <div className="flex min-w-0 items-center gap-4">
+          <div className="size-12 shrink-0 rounded-full bg-primary/10 border border-border flex items-center justify-center text-primary-foreground font-bold">
             AD
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">CEO Dashboard</p>
-            <h1 className="text-xl font-bold tracking-tight text-foreground">Hi, {profile?.displayName?.split(' ')[0] || 'CEO'}</h1>
+            <h1 className="truncate text-xl font-bold tracking-tight text-foreground">Hi, {profile?.displayName?.split(' ')[0] || 'CEO'}</h1>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-2">
           <Button
             variant="outline"
             size="icon"
@@ -281,6 +281,9 @@ export default function AdminDashboard() {
           >
             <Search className="w-5 h-5" />
           </Button>
+          <Button variant="outline" size="icon" onClick={() => void fetchUsers()} aria-label="Refresh users" data-testid="admin-refresh">
+            <RefreshCw className="w-5 h-5" />
+          </Button>
           <Button variant="outline" size="icon" onClick={handleLogout} aria-label="Sign out" className="text-destructive">
             <LogOut className="w-5 h-5" />
           </Button>
@@ -288,18 +291,19 @@ export default function AdminDashboard() {
       </header>
 
       {showSearch && (
-        <div className="px-6 pb-4">
+        <div className="px-4 sm:px-6 pb-4">
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             type="search"
             placeholder="Search users by name or phone"
             aria-label="Search users"
+            data-testid="admin-search"
           />
         </div>
       )}
 
-      <main className="flex-1 px-6" aria-busy={loading}>
+      <main className="mx-auto w-full max-w-2xl lg:max-w-4xl flex-1 px-4 sm:px-6" aria-busy={loading}>
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3 sm:gap-4 py-2 mb-6" role="status" aria-label={loading ? 'Loading stats' : 'Stats'}>
           <StatTile label="Trainers" value={loading ? undefined : trainers.length} icon={<UserPlus className="w-4 h-4" />} />

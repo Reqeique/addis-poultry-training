@@ -197,6 +197,8 @@ export async function GET() {
   const satisfactionScore = Math.round((responseRate + activeRate) / 2);
 
   // ---- Revenue: 1,000 ETB per active subscription ----
+  // Returns the trailing 12 months (zero-filled) so the CEO can switch
+  // between a 6-month view and a Yearly view client-side.
   const monthStart = new Date();
   monthStart.setDate(1);
   monthStart.setHours(0, 0, 0, 0);
@@ -211,10 +213,13 @@ export async function GET() {
     byMonth.set(ym, (byMonth.get(ym) ?? 0) + 1);
   }
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  for (const [ym, count] of [...byMonth.entries()].sort().slice(-6)) {
-    const m = parseInt(ym.slice(5, 7), 10) - 1;
+  const nowD = new Date();
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(nowD.getFullYear(), nowD.getMonth() - i, 1);
+    const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const count = byMonth.get(ym) ?? 0;
     monthly.push({
-      name: monthNames[m] ?? ym,
+      name: monthNames[d.getMonth()] ?? ym,
       revenue: count * SUBSCRIPTION_PRICE_ETB,
       payments: count,
     });

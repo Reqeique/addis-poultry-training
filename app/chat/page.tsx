@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Phone, MoreVertical, Image as ImageIcon, Send, Camera, Mic, Square, Trash2, Video, TriangleAlert } from 'lucide-react';
 import { format } from 'date-fns';
 import { resolveApiUrl } from '@/lib/api-helper';
+import { pickSupportedAudioMime, audioExtensionForMime, requestMicrophone, micErrorMessage } from '@/lib/media/audio-recorder';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -97,6 +98,7 @@ function ChatContent() {
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const audioMimeRef = useRef<string | undefined>(undefined);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
@@ -104,8 +106,10 @@ function ChatContent() {
 
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
+      const stream = await requestMicrophone();
+      const mimeType = pickSupportedAudioMime();
+      audioMimeRef.current = mimeType;
+      const mediaRecorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
@@ -116,17 +120,19 @@ function ChatContent() {
       };
 
       mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const type = audioMimeRef.current ?? 'audio/mp4';
+        const audioBlob = new Blob(audioChunksRef.current, { type });
         const audioUrl = URL.createObjectURL(audioBlob);
         setAudioBlob(audioBlob);
         setAudioUrl(audioUrl);
+        stream.getTracks().forEach((track) => track.stop());
       };
 
       mediaRecorder.start();
       setIsRecording(true);
     } catch (err) {
       console.error('Error accessing microphone:', err);
-      alert('Could not access microphone');
+      alert(micErrorMessage(err));
     }
   };
 
@@ -342,7 +348,7 @@ function ChatContent() {
     }
   };
 
-  const sendMessage = async (e: React.FormEvent) => {
+  const sendMessage = async (e: React.FormEvent | React.KeyboardEvent) => {
     e.preventDefault();
     if ((!newMessage.trim() && !imageFile && !audioBlob) || !chatId || !profile || isSending) return;
 
@@ -372,9 +378,11 @@ function ChatContent() {
         imageObjectKey = json.objectKey as string;
       }
 
-      // Upload audio to R2
+      // Upload audio to R2 (iOS records mp4/m4a, Android/Chrome webm)
       if (currentAudioBlob) {
-        const audioFile = new File([currentAudioBlob], 'voice.webm', { type: currentAudioBlob.type || 'audio/webm' });
+        const mime = currentAudioBlob.type || audioMimeRef.current || 'audio/mp4';
+        const ext = audioExtensionForMime(mime);
+        const audioFile = new File([currentAudioBlob], `voice.${ext}`, { type: mime });
         const fd = new FormData();
         fd.append('file', audioFile);
         const res = await fetch(resolveApiUrl('/api/chat-media/upload'), { method: 'POST', body: fd });
@@ -553,7 +561,7 @@ function ChatContent() {
                             isMe ? 'border-primary/30 bg-primary/5' : 'border-border bg-card'
                           )}
                         >
-                          <audio src={src} controls preload="none" className="h-10 w-full" />
+                          <audio src={src} controls preload="none" playsInline className="h-10 w-full" />
                         </div>
                       ) : null;
                     })()}
@@ -568,6 +576,7 @@ function ChatContent() {
                           key={msg.id}
                           controls
                           preload="none"
+                          playsInline
                           className="w-full rounded-lg bg-black"
                           src={resolveApiUrl(`/api/inquiries/${msg.inquiry_id}/video`)}
                         />
@@ -662,6 +671,13 @@ function ChatContent() {
                 setNewMessage(e.target.value);
                 e.target.style.height = 'auto';
                 e.target.style.height = Math.min(e.target.scrollHeight, 112) + 'px';
+              }}
+              onKeyDown={(e) => {
+                // Farmer/Supervisor: Enter sends, Shift+Enter adds a new line.
+                if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+                  e.preventDefault();
+                  void sendMessage(e);
+                }
               }}
             />
             <Button

@@ -49,8 +49,9 @@ export async function POST(request: Request) {
   const audioUrl = typeof body?.audioUrl === 'string' ? body.audioUrl : null;
   const uploadedVideo = (body?.uploadedVideo ?? null) as UploadedVideoPayload | null;
 
-  if (!message) {
-    return NextResponse.json({ error: 'Message is required.' }, { status: 400 });
+  const hasMedia = Boolean(image || audioUrl || uploadedVideo?.objectKey);
+  if (!message && !hasMedia) {
+    return NextResponse.json({ error: 'Message or media is required.' }, { status: 400 });
   }
 
   const admin = createAdminClient();
@@ -58,7 +59,7 @@ export async function POST(request: Request) {
     trainee_id: profile.id,
     trainer_id: profile.assigned_trainer_id,
     trainee_name: profile.display_name,
-    message,
+    message: message || '(media message)',
     urgency,
     status: 'pending',
     image,

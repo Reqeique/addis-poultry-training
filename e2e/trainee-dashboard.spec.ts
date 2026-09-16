@@ -39,6 +39,11 @@ test.describe('Trainee dashboard', () => {
       .getByRole('textbox', { name: 'Describe your question or issue in detail...' })
       .fill('My broilers stopped eating')
     await expect(send, 'send button enables after message entry').toBeEnabled()
+    // Media-only sends are allowed, but a fully empty form still blocks send.
+    await page
+      .getByRole('textbox', { name: 'Describe your question or issue in detail...' })
+      .fill('')
+    await expect(send, 'send button disables again when message cleared with no media').toBeDisabled()
   })
 
   test('B4. bottom nav routes to the profile page', async ({ page }) => {

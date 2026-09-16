@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import path from 'node:path';
-import { getProfileByPhone, getInquiryByTrainee, getMessageByInquiry, getChat, deleteInquiriesByMarker } from './db';
+import { getProfileByPhone, getInquiryByTrainee, getLatestMediaInquiry, getMessageByInquiry, getChat, deleteInquiriesByMarker } from './db';
 import { settle, switchToEnglish, APP_URL } from './helpers';
 
 const TRAINEE_PHONE = process.env.TRAINEE_PHONE || '+251922334455';
@@ -72,8 +72,32 @@ test.describe('inquiry flow (UI ↔ Supabase)', () => {
     }
   });
 
-  test('C1 sending an inquiry also drops a message in the trainer chat (DB cross-check)', async ({
-    page,
+  test('B3 sends a media-only inquiry with no description', async ({ page }) => {
+    await goTraineeInquiry(page);
+
+    const trainee = await getProfileByPhone(TRAINEE_PHONE);
+
+    try {
+    // Attach an image but type no message — send must stay enabled (media-only).
+    await page.locator('input[type=file][accept="image/*"]').nth(1).setInputFiles(PIXEL);
+    await expect(page.getByRole('img').first()).toBeVisible({ timeout: 10000 });
+
+    const send = page.getByRole('button', { name: 'Send to Supervisor' });
+    await expect(send, 'send enables with media and no message').toBeEnabled();
+    await send.click();
+
+    await expect(page.getByText('Sent Successfully!')).toBeVisible({ timeout: 10000 });
+
+    const inquiry = await getLatestMediaInquiry(trainee!.id);
+    expect(inquiry, 'media-only inquiry row created in DB').toBeTruthy();
+    expect(inquiry!.image, 'image stored as base64 data URI').toMatch(/^data:image\//);
+    } finally {
+      // No e2e noise left behind.
+      if (trainee) await deleteInquiriesByMarker(trainee.id, '(media message)');
+    }
+  });
+
+  test('C1 sending an inquiry also drops a message in the trainer chat (DB cross-check)', async ({    page,
   }) => {
     await goTraineeInquiry(page);
 

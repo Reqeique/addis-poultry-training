@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { TraineeBottomNav } from '@/components/TraineeBottomNav';
 import { processVideoForUpload } from '@/lib/media/video';
+import { pickSupportedAudioMime, requestMicrophone, micErrorMessage } from '@/lib/media/audio-recorder';
 import { LogOut, Send, CheckCircle2, Globe, Camera, Image as ImageIcon, Mic, Square, Trash2, Video, AlertTriangle, Clock } from 'lucide-react';
 import { resolveApiUrl } from '@/lib/api-helper';
 import { differenceInDays, format } from 'date-fns';
@@ -185,6 +186,7 @@ export default function TraineeDashboard() {
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const audioMimeRef = useRef<string | undefined>(undefined);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
@@ -364,8 +366,10 @@ export default function TraineeDashboard() {
 
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
+      const stream = await requestMicrophone();
+      const mimeType = pickSupportedAudioMime();
+      audioMimeRef.current = mimeType;
+      const mediaRecorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
@@ -376,17 +380,19 @@ export default function TraineeDashboard() {
       };
 
       mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const type = audioMimeRef.current ?? 'audio/mp4';
+        const audioBlob = new Blob(audioChunksRef.current, { type });
         const audioUrl = URL.createObjectURL(audioBlob);
         setAudioBlob(audioBlob);
         setAudioUrl(audioUrl);
+        stream.getTracks().forEach((track) => track.stop());
       };
 
       mediaRecorder.start();
       setIsRecording(true);
     } catch (err) {
       console.error('Error accessing microphone:', err);
-      alert('Could not access microphone');
+      alert(micErrorMessage(err));
     }
   };
 
@@ -507,7 +513,9 @@ export default function TraineeDashboard() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!message.trim() || !profile) return;
+    if (!profile) return;
+    const hasMedia = image !== null || audioBlob !== null || videoFile !== null;
+    if (!message.trim() && !hasMedia) return;
 
     setIsSubmitting(true);
     
@@ -581,7 +589,7 @@ export default function TraineeDashboard() {
         trainee_id: profile.uid,
         trainer_id: profile.assignedTrainerId,
         trainee_name: profile.displayName,
-        message,
+        message: message.trim() || '(media message)',
         urgency,
         status: 'pending',
         image: image || null,
@@ -792,7 +800,6 @@ export default function TraineeDashboard() {
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder={t.placeholder}
                 className="min-h-[150px]"
-                required
               />
             </div>
 
@@ -892,7 +899,7 @@ export default function TraineeDashboard() {
               </Card>
             </div>
 
-            <Button type="submit" size="lg" loading={isSubmitting} disabled={!message.trim()} className="mt-1 w-full">
+            <Button type="submit" size="lg" loading={isSubmitting} disabled={!message.trim() && !image && !audioBlob && !videoFile} className="mt-1 w-full">
               <span>{t.send}</span>
               <Send className="size-5" />
             </Button>

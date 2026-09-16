@@ -84,6 +84,18 @@ export async function getInquiryByTrainee(traineeId: string, marker: string) {
   return data?.[0] ?? null
 }
 
+/** Latest media-only inquiry (fallback text) for a trainee. */
+export async function getLatestMediaInquiry(traineeId: string) {
+  const { data } = await admin()
+    .from('inquiries')
+    .select('id, trainee_id, message, urgency, status, image, created_at')
+    .eq('trainee_id', traineeId)
+    .eq('message', '(media message)')
+    .order('created_at', { ascending: false })
+    .limit(1)
+  return data?.[0] ?? null
+}
+
 export async function getMessageByInquiry(inquiryId: string) {
   const { data } = await admin()
     .from('messages')

@@ -7,7 +7,7 @@ const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // 10 MB
 const MAX_AUDIO_BYTES = 20 * 1024 * 1024; // 20 MB
 
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-const ALLOWED_AUDIO_TYPES = ['audio/webm', 'audio/ogg', 'audio/mp4', 'audio/mpeg', 'audio/wav'];
+const ALLOWED_AUDIO_TYPES = ['audio/webm', 'audio/ogg', 'audio/mp4', 'audio/mpeg', 'audio/wav', 'audio/aac', 'audio/x-m4a', 'audio/m4a'];
 
 function getExtension(contentType: string): string {
   const map: Record<string, string> = {
@@ -18,6 +18,9 @@ function getExtension(contentType: string): string {
     'audio/webm': 'webm',
     'audio/ogg': 'ogg',
     'audio/mp4': 'm4a',
+    'audio/x-m4a': 'm4a',
+    'audio/m4a': 'm4a',
+    'audio/aac': 'aac',
     'audio/mpeg': 'mp3',
     'audio/wav': 'wav',
   };

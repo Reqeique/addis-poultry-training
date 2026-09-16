@@ -1,13 +1,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Users, MessageSquare, Clock, Star, Banknote, Activity } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Users, MessageSquare, Clock, Star, Banknote, Activity, Search, RefreshCw } from 'lucide-react';
 import { Tabs, TabsList, TabsTab, TabsPanel } from '@/components/ui/tabs';
 import { RoleBars, RevenueTrend, ResponseDonut, TeamActivity } from '@/components/insights-charts';
 import { Card, CardPanel } from '@/components/ui/card';
 import { Empty, EmptyHeader, EmptyTitle, EmptyDescription } from '@/components/ui/empty';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StatTile } from '@/components/stat-tile';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 interface Insights {
   messaging: {
@@ -67,8 +70,12 @@ interface Insights {
 }
 
 export function AdminInsights() {
+  const router = useRouter();
   const [insights, setInsights] = useState<Insights | null>(null);
   const [insightsLoading, setInsightsLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
+  const [revenueRange, setRevenueRange] = useState<'6m' | '1y'>('6m');
 
   useEffect(() => {
     void fetchInsights();
@@ -87,9 +94,48 @@ export function AdminInsights() {
     }
   }
 
+  const q = search.trim().toLowerCase();
+  const matches = (s: string) => !q || s.toLowerCase().includes(q);
+  const topSenders = (insights?.messaging.top_senders ?? []).filter(
+    (s) => matches(s.display_name) || matches(s.role) || matches(s.phone_number),
+  );
+  const unrepliedChats = (insights?.messaging.unreplied_chats ?? []).filter(
+    (c) => matches(c.last_sender_name) || matches(c.waiting_on) || matches(c.last_message),
+  );
+  const pendingList = (insights?.messaging.pending_list ?? []).filter(
+    (p) => matches(p.trainee_name) || matches(p.message),
+  );
+  const employees = (insights?.employees ?? []).filter(
+    (e) => matches(e.display_name) || matches(e.phone_number),
+  );
+  const monthlyAll = insights?.revenue.monthly ?? [];
+  const monthlyShown = revenueRange === '6m' ? monthlyAll.slice(-6) : monthlyAll.slice(-12);
+
   return (
         <section className="mb-6" data-testid="admin-insights" aria-label="Insights and messaging analytics">
-          <h2 className="text-base font-bold text-foreground mb-3">Insights & messaging analytics</h2>
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <h2 className="text-base font-bold text-foreground">Insights & messaging analytics</h2>
+            <div className="flex shrink-0 items-center gap-2">
+              <Button variant="outline" size="icon-sm" onClick={() => setShowSearch((s) => !s)} aria-label="Toggle insights search" aria-pressed={showSearch}>
+                <Search className="size-4" />
+              </Button>
+              <Button variant="outline" size="icon-sm" onClick={() => void fetchInsights()} aria-label="Refresh insights" data-testid="insights-refresh">
+                <RefreshCw className="size-4" />
+              </Button>
+            </div>
+          </div>
+          {showSearch && (
+            <div className="mb-3">
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                type="search"
+                placeholder="Search senders, chats, team"
+                aria-label="Search insights"
+                data-testid="insights-search"
+              />
+            </div>
+          )}
           {insightsLoading && !insights ? (
             <div className="grid gap-2" role="status" aria-label="Loading insights">
               <Skeleton className="h-20 w-full rounded-2xl" />
@@ -145,12 +191,17 @@ export function AdminInsights() {
 
             <Card>
               <CardPanel className="p-5">
-                <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-3">Top senders</p>
-                {insights.messaging.top_senders.length === 0 ? (
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Top senders</p>
+                  <Button variant="outline" size="sm" onClick={() => router.push('/admin/chats')}>
+                    Open chat sessions
+                  </Button>
+                </div>
+                {topSenders.length === 0 ? (
                   <Empty className="gap-1 py-4 md:py-4"><EmptyDescription>No messages yet</EmptyDescription></Empty>
                 ) : (
                   <ul className="grid gap-2">
-                    {insights.messaging.top_senders.slice(0, 5).map((s) => (
+                    {topSenders.slice(0, 5).map((s) => (
                       <li key={s.id} data-testid="insights-top-sender" className="flex items-center justify-between text-sm">
                         <span className="font-semibold text-foreground truncate">{s.display_name} <span className="text-muted-foreground font-normal">· {s.role}</span></span>
                         <span className="text-muted-foreground font-bold">{s.count}</span>
@@ -166,18 +217,18 @@ export function AdminInsights() {
                 <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-3">
                   Waiting for a reply ({insights.messaging.unreplied_count})
                 </p>
-                {insights.messaging.unreplied_chats.length === 0 && insights.messaging.pending_list.length === 0 ? (
+                {unrepliedChats.length === 0 && pendingList.length === 0 ? (
                   <Empty className="gap-1 py-4 md:py-4" data-testid="insights-unreplied-empty"><EmptyDescription>Inbox zero — everyone got a reply</EmptyDescription></Empty>
                 ) : (
                   <ul className="grid gap-2">
-                    {insights.messaging.unreplied_chats.slice(0, 5).map((c) => (
+                    {unrepliedChats.slice(0, 5).map((c) => (
                       <li key={c.chat_id} data-testid="insights-unreplied" className="text-sm border border-border rounded-2xl px-3 py-2">
                         <p className="font-semibold text-foreground truncate">{c.last_sender_name} → {c.waiting_on}</p>
                         <p className="text-muted-foreground truncate">{c.last_message || '(media message)'}</p>
                         <p className="text-xs text-amber-600 font-semibold">waiting {c.hours_waiting}h</p>
                       </li>
                     ))}
-                    {insights.messaging.pending_list.slice(0, 5).map((q) => (
+                    {pendingList.slice(0, 5).map((q) => (
                       <li key={q.id} data-testid="insights-unreplied" className="text-sm border border-border rounded-2xl px-3 py-2">
                         <p className="font-semibold text-foreground truncate">{q.trainee_name} — pending inquiry</p>
                         <p className="text-muted-foreground truncate">{q.message}</p>
@@ -227,11 +278,31 @@ export function AdminInsights() {
 
             <Card>
               <CardPanel className="p-5">
-                <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-3">Revenue trend (ETB)</p>
-                {insights.revenue.monthly.length === 0 ? (
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Revenue trend (ETB)</p>
+                  <div className="flex gap-1" role="group" aria-label="Revenue period">
+                    <Button
+                      variant={revenueRange === '6m' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setRevenueRange('6m')}
+                      data-testid="insights-revenue-6m"
+                    >
+                      6 months
+                    </Button>
+                    <Button
+                      variant={revenueRange === '1y' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setRevenueRange('1y')}
+                      data-testid="insights-revenue-1y"
+                    >
+                      Yearly
+                    </Button>
+                  </div>
+                </div>
+                {monthlyShown.length === 0 || monthlyShown.every((m) => m.revenue === 0) ? (
                   <Empty className="gap-1 py-4 md:py-4"><EmptyDescription>No payments recorded yet</EmptyDescription></Empty>
                 ) : (
-                  <RevenueTrend data={insights.revenue.monthly} />
+                  <RevenueTrend data={monthlyShown} />
                 )}
               </CardPanel>
             </Card>
@@ -242,9 +313,9 @@ export function AdminInsights() {
                 <p className="text-sm text-foreground" data-testid="insights-revenue-detail">
                   {insights.revenue.monthly_revenue_etb.toLocaleString()} ETB/mo from {insights.revenue.active_subscriptions} active × {insights.revenue.price_etb.toLocaleString()} ETB · {insights.revenue.paid_this_month} paid this month
                 </p>
-                {insights.revenue.monthly.length > 0 && (
+                {monthlyShown.length > 0 && (
                   <p className="text-xs text-muted-foreground mt-1">
-                    {insights.revenue.monthly.map((m) => `${m.name}: ${m.revenue.toLocaleString()}`).join(' · ')}
+                    {monthlyShown.map((m) => `${m.name}: ${m.revenue.toLocaleString()}`).join(' · ')}
                   </p>
                 )}
               </CardPanel>
@@ -255,11 +326,11 @@ export function AdminInsights() {
             <Card>
               <CardPanel className="p-5">
                 <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-3">Messages vs inquiry replies per supervisor</p>
-                {insights.employees.length === 0 ? (
+                {employees.length === 0 ? (
                   <Empty className="gap-1 py-4 md:py-4"><EmptyDescription>No trainers yet</EmptyDescription></Empty>
                 ) : (
                   <TeamActivity
-                    data={insights.employees.slice(0, 8).map((e) => ({
+                    data={employees.slice(0, 8).map((e) => ({
                       name: e.display_name,
                       messages: e.messages_sent,
                       replies: e.inquiries_responded,
@@ -272,11 +343,11 @@ export function AdminInsights() {
             <Card>
               <CardPanel className="p-5">
                 <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-3">Employee activity</p>
-                {insights.employees.length === 0 ? (
+                {employees.length === 0 ? (
                   <Empty className="gap-1 py-4 md:py-4"><EmptyDescription>No trainers yet</EmptyDescription></Empty>
                 ) : (
                   <ul className="grid gap-2">
-                    {insights.employees.slice(0, 8).map((e) => (
+                    {employees.slice(0, 8).map((e) => (
                       <li key={e.id} data-testid="insights-employee" className="flex items-center justify-between text-sm gap-2">
                         <span className="font-semibold text-foreground truncate">{e.display_name}</span>
                         <span className="text-xs text-muted-foreground shrink-0">

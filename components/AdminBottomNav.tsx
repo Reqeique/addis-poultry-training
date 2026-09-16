@@ -1,12 +1,16 @@
 'use client';
-import { Users, ChartColumn } from 'lucide-react';
+import { Users, ChartColumn, MessageSquare } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Tabs, TabsList, TabsTab } from '@/components/ui/tabs';
 
 export function AdminBottomNav() {
   const pathname = usePathname();
   const router = useRouter();
-  const value = pathname.startsWith('/admin/insights') ? '/admin/insights' : '/admin';
+  const value = pathname.startsWith('/admin/insights')
+    ? '/admin/insights'
+    : pathname.startsWith('/admin/chats')
+      ? '/admin/chats'
+      : '/admin';
 
   return (
     <nav aria-label="CEO sections" className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card pb-safe">
@@ -30,6 +34,15 @@ export function AdminBottomNav() {
             >
               <ChartColumn className="size-5" />
               <span>Insights</span>
+            </TabsTab>
+            <TabsTab
+              value="/admin/chats"
+              data-testid="admin-nav-chats"
+              aria-label="Chats"
+              className="min-w-0 flex-1 shrink flex-col gap-1 py-1 text-[10px] sm:text-[10px] font-bold uppercase tracking-wider"
+            >
+              <MessageSquare className="size-5" />
+              <span>Chats</span>
             </TabsTab>
           </TabsList>
         </Tabs>
