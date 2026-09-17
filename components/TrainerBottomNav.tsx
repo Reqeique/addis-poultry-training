@@ -33,9 +33,9 @@ export function TrainerBottomNav() {
                   key={item.value}
                   value={item.value}
                   aria-label={item.label}
-                  className="min-w-0 flex-1 shrink flex-col gap-0.5 px-0 py-1 text-[9px] font-bold uppercase tracking-wide"
+                  className="min-w-0 flex-1 shrink flex-col gap-1 px-0 py-2 h-auto text-[9px] font-bold uppercase tracking-wide"
                 >
-                  <Icon className="size-5" />
+                  <Icon className="size-6" />
                   <span className="truncate">{item.label}</span>
                 </TabsTab>
               );

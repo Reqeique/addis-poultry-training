@@ -28,7 +28,7 @@ export async function POST(request: Request) {
 
   if (!profile.assigned_trainer_id) {
     return NextResponse.json(
-      { error: 'No trainer is assigned to this account yet.' },
+      { error: 'No supervisor is assigned to this account yet.' },
       { status: 400 }
     );
   }

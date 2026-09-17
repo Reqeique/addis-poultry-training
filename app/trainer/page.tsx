@@ -219,7 +219,7 @@ export default function TrainerDashboard() {
     if (error) {
       console.error('Error deactivating trainee:', error);
       setTrainees((prev) => prev.map((t) => (t.uid === trainee.uid ? { ...t, isActive: true } : t)));
-      alert('Could not deactivate trainee: ' + error.message);
+        alert('Could not deactivate farmer: ' + error.message);
     }
   };
 

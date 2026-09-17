@@ -21,27 +21,27 @@ export function AdminBottomNav() {
               value="/admin"
               data-testid="admin-nav-users"
               aria-label="Users"
-              className="min-w-0 flex-1 shrink flex-col gap-1 py-1 text-[10px] sm:text-[10px] font-bold uppercase tracking-wider"
+              className="min-w-0 flex-1 shrink flex-col gap-1.5 py-2.5 h-auto text-[10px] sm:text-[10px] font-bold uppercase tracking-wider"
             >
-              <Users className="size-5" />
+              <Users className="size-6" />
               <span>Users</span>
             </TabsTab>
             <TabsTab
               value="/admin/insights"
               data-testid="admin-nav-insights"
               aria-label="Insights"
-              className="min-w-0 flex-1 shrink flex-col gap-1 py-1 text-[10px] sm:text-[10px] font-bold uppercase tracking-wider"
+              className="min-w-0 flex-1 shrink flex-col gap-1.5 py-2.5 h-auto text-[10px] sm:text-[10px] font-bold uppercase tracking-wider"
             >
-              <ChartColumn className="size-5" />
+              <ChartColumn className="size-6" />
               <span>Insights</span>
             </TabsTab>
             <TabsTab
               value="/admin/chats"
               data-testid="admin-nav-chats"
               aria-label="Chats"
-              className="min-w-0 flex-1 shrink flex-col gap-1 py-1 text-[10px] sm:text-[10px] font-bold uppercase tracking-wider"
+              className="min-w-0 flex-1 shrink flex-col gap-1.5 py-2.5 h-auto text-[10px] sm:text-[10px] font-bold uppercase tracking-wider"
             >
-              <MessageSquare className="size-5" />
+              <MessageSquare className="size-6" />
               <span>Chats</span>
             </TabsTab>
           </TabsList>

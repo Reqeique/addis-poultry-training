@@ -100,7 +100,7 @@ export default function TrainerChatsPage() {
           emptyHint={
             query
               ? `No chats match "${query}".`
-              : 'New conversations with your trainees will show up here.'
+              : 'New conversations with your farmers will show up here.'
           }
         />
       </main>

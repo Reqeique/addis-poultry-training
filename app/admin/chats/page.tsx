@@ -129,7 +129,7 @@ export default function AdminChatsPage() {
         </div>
       )}
 
-      <main className="mx-auto w-full max-w-2xl lg:max-w-4xl flex-1 px-4 sm:px-6" aria-busy={loading} data-testid="admin-chats">
+      <main className="mx-auto w-full max-w-2xl lg:max-w-4xl flex-1 min-w-0 px-4 sm:px-6" aria-busy={loading} data-testid="admin-chats">
         <h2 className="text-base font-bold text-foreground mb-3">Chat sessions ({loading ? '…' : filtered.length})</h2>
         {loading ? (
           <div className="grid gap-2" role="status" aria-label="Loading chat sessions">
@@ -142,12 +142,12 @@ export default function AdminChatsPage() {
             <EmptyDescription>Farmer ↔ supervisor chats will appear here.</EmptyDescription>
           </Empty>
         ) : (
-          <ul className="grid gap-2">
+          <ul className="grid min-w-0 gap-2">
             {filtered.map((c) => (
-              <li key={c.chat_id} data-testid="admin-chat">
-                <Card>
-                  <CardPanel className="p-4">
-                    <button type="button" onClick={() => openChat(c.chat_id)} className="flex w-full items-center gap-3 text-left">
+              <li key={c.chat_id} data-testid="admin-chat" className="min-w-0 max-w-full overflow-hidden">
+                <Card className="min-w-0 max-w-full overflow-hidden">
+                  <CardPanel className="min-w-0 p-4">
+                    <button type="button" onClick={() => openChat(c.chat_id)} className="flex min-w-0 w-full items-center gap-3 text-left">
                       <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15 text-sm font-bold text-primary">
                         <MessageSquare className="size-4" />
                       </span>
@@ -164,14 +164,14 @@ export default function AdminChatsPage() {
                       )}
                     </button>
                     {openId === c.chat_id && (
-                      <div className="mt-3 grid gap-2 border-t border-border pt-3">
+                      <div className="mt-3 grid min-w-0 gap-2 border-t border-border pt-3">
                         {(messages[c.chat_id] ?? []).length === 0 ? (
                           <p className="text-sm text-muted-foreground">Loading history…</p>
                         ) : (
                           messages[c.chat_id].map((m) => (
-                            <div key={m.id} className="rounded-xl bg-muted/60 px-3 py-2 text-sm">
-                              <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">{m.sender_name}</p>
-                              <p className="font-medium">{m.text || '(media message)'}</p>
+                            <div key={m.id} className="rounded-xl bg-muted/60 px-3 py-2 text-sm min-w-0 max-w-full overflow-hidden">
+                              <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground truncate">{m.sender_name}</p>
+                              <p className="font-medium break-words">{m.text || '(media message)'}</p>
                             </div>
                           ))
                         )}

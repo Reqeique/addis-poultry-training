@@ -111,6 +111,9 @@ export function AdminInsights() {
   const monthlyAll = insights?.revenue.monthly ?? [];
   const monthlyShown = revenueRange === '6m' ? monthlyAll.slice(-6) : monthlyAll.slice(-12);
 
+  const roleLabel = (role: string) =>
+    role === 'trainer' ? 'Supervisor' : role === 'trainee' ? 'Farmer' : role === 'admin' ? 'CEO' : role;
+
   return (
         <section className="mb-6 min-w-0 w-full max-w-full overflow-hidden" data-testid="admin-insights" aria-label="Insights and messaging analytics">
           <div className="mb-3 flex items-center justify-between gap-2">
@@ -168,7 +171,7 @@ export function AdminInsights() {
               <CardPanel className="min-w-0 p-4 sm:p-5">
                 <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-1">Messaging volume</p>
                 <p className="text-sm text-foreground break-words" data-testid="insights-volume">
-                  {insights.messaging.total_messages} messages · {insights.messaging.messages_by_role.trainer ?? 0} trainer · {insights.messaging.messages_by_role.trainee ?? 0} trainee · {insights.messaging.responded_inquiries}/{insights.messaging.total_inquiries} inquiries answered
+                  {insights.messaging.total_messages} messages · {insights.messaging.messages_by_role.trainer ?? 0} supervisor · {insights.messaging.messages_by_role.trainee ?? 0} farmer · {insights.messaging.responded_inquiries}/{insights.messaging.total_inquiries} inquiries answered
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
                   Reply time from {insights.reply_time.replies_counted} chat replies · {insights.reply_time.inquiries_counted} inquiry replies
@@ -203,7 +206,7 @@ export function AdminInsights() {
                   <ul className="grid min-w-0 gap-2">
                     {topSenders.slice(0, 5).map((s) => (
                       <li key={s.id} data-testid="insights-top-sender" className="flex min-w-0 items-center justify-between gap-2 text-sm">
-                        <span className="min-w-0 font-semibold text-foreground truncate">{s.display_name} <span className="text-muted-foreground font-normal">· {s.role}</span></span>
+                        <span className="min-w-0 font-semibold text-foreground truncate">{s.display_name} <span className="text-muted-foreground font-normal">· {roleLabel(s.role)}</span></span>
                         <span className="text-muted-foreground font-bold shrink-0">{s.count}</span>
                       </li>
                     ))}
@@ -263,7 +266,7 @@ export function AdminInsights() {
               <CardPanel className="min-w-0 p-4 sm:p-5">
                 <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-1">Customer satisfaction</p>
                 <p className="text-sm text-foreground break-words" data-testid="insights-csat-detail">
-                  {insights.satisfaction.score}% overall · {insights.satisfaction.response_rate}% inquiries answered · {insights.satisfaction.active_rate}% trainees active
+                  {insights.satisfaction.score}% overall · {insights.satisfaction.response_rate}% inquiries answered · {insights.satisfaction.active_rate}% farmers active
                 </p>
               </CardPanel>
             </Card>
@@ -327,7 +330,7 @@ export function AdminInsights() {
               <CardPanel className="min-w-0 p-4 sm:p-5">
                 <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-3">Messages vs inquiry replies per supervisor</p>
                 {employees.length === 0 ? (
-                  <Empty className="gap-1 py-4 md:py-4"><EmptyDescription>No trainers yet</EmptyDescription></Empty>
+                  <Empty className="gap-1 py-4 md:py-4"><EmptyDescription>No supervisors yet</EmptyDescription></Empty>
                 ) : (
                   <TeamActivity
                     data={employees.slice(0, 8).map((e) => ({
@@ -344,14 +347,14 @@ export function AdminInsights() {
               <CardPanel className="min-w-0 p-4 sm:p-5">
                 <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-3">Employee activity</p>
                 {employees.length === 0 ? (
-                  <Empty className="gap-1 py-4 md:py-4"><EmptyDescription>No trainers yet</EmptyDescription></Empty>
+                  <Empty className="gap-1 py-4 md:py-4"><EmptyDescription>No supervisors yet</EmptyDescription></Empty>
                 ) : (
                   <ul className="grid min-w-0 gap-2">
                     {employees.slice(0, 8).map((e) => (
                       <li key={e.id} data-testid="insights-employee" className="flex min-w-0 max-w-full items-center justify-between overflow-hidden text-sm gap-2">
                         <span className="min-w-0 font-semibold text-foreground truncate">{e.display_name}</span>
                         <span className="text-xs text-muted-foreground shrink-0">
-                          {e.trainees_assigned} trainees · {e.messages_sent} msgs · {e.inquiries_responded} replies
+                          {e.trainees_assigned} farmers · {e.messages_sent} msgs · {e.inquiries_responded} replies
                         </span>
                       </li>
                     ))}

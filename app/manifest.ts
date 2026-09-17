@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'My Chicken Addis',
     short_name: 'ChickenAddis',
-    description: 'A streamlined communication platform for poultry farmers and trainers.',
+    description: 'A streamlined communication platform for poultry farmers and supervisors.',
     start_url: '/',
     display: 'standalone',
     background_color: '#ffffff',

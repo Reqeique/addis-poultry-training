@@ -644,7 +644,7 @@ export default function TraineeDashboard() {
       });
 
       if (messageError) {
-        throw new Error(messageError.message || 'Could not send inquiry to trainer chat.');
+        throw new Error(messageError.message || 'Could not send inquiry to supervisor chat.');
       }
 
       await supabase

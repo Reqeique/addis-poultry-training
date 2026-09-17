@@ -59,7 +59,7 @@ test.describe('Admin insights & messaging analytics (UI ↔ API)', () => {
     // Team tab.
     await page.getByTestId('insights-tab-team').click()
     await expect(
-      page.getByTestId('insights-employee').first().or(insights.getByText('No trainers yet')),
+      page.getByTestId('insights-employee').first().or(insights.getByText('No supervisors yet')),
     ).toBeVisible({ timeout: 20_000 })
   })
 

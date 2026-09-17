@@ -26,7 +26,7 @@ function PeerAvatar({ chat, size = 'md' }: { chat: RecentChat; size?: 'md' | 'lg
 export function RecentChatsList({
   chats,
   loading,
-  emptyHint = 'New conversations with your trainees will show up here.',
+  emptyHint = 'New conversations with your farmers will show up here.',
 }: {
   chats: RecentChat[];
   loading: boolean;
@@ -63,7 +63,7 @@ export function RecentChatsList({
   return (
     <ul className="flex flex-col gap-2">
       {chats.map((chat) => {
-        const peerName = chat.peer?.displayName || 'Unknown trainee';
+        const peerName = chat.peer?.displayName || 'Unknown farmer';
         const href = chat.peer ? `/chat?peerId=${chat.peer.uid}` : '#';
         return (
           <li key={chat.chatId}>

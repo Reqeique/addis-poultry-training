@@ -42,25 +42,25 @@ export function TraineeBottomNav({ isAmharic }: { isAmharic: boolean }) {
             <TabsTab
               value="/trainee"
               aria-label={labels.home}
-              className="min-w-0 flex-1 shrink flex-col gap-1 py-1 text-[10px] font-bold uppercase tracking-wider"
+              className="min-w-0 flex-1 shrink flex-col gap-1.5 py-2.5 h-auto text-[10px] font-bold uppercase tracking-wider"
             >
-              <Home className="size-5" />
+              <Home className="size-6" />
               <span className="truncate">{labels.home}</span>
             </TabsTab>
             <TabsTab
               value="/chat"
               aria-label={labels.chats}
-              className="min-w-0 flex-1 shrink flex-col gap-1 py-1 text-[10px] font-bold uppercase tracking-wider"
+              className="min-w-0 flex-1 shrink flex-col gap-1.5 py-2.5 h-auto text-[10px] font-bold uppercase tracking-wider"
             >
-              <MessageSquare className="size-5" />
+              <MessageSquare className="size-6" />
               <span className="truncate">{labels.chats}</span>
             </TabsTab>
             <TabsTab
               value="/trainee/profile"
               aria-label={labels.profile}
-              className="min-w-0 flex-1 shrink flex-col gap-1 py-1 text-[10px] font-bold uppercase tracking-wider"
+              className="min-w-0 flex-1 shrink flex-col gap-1.5 py-2.5 h-auto text-[10px] font-bold uppercase tracking-wider"
             >
-              <User className="size-5" />
+              <User className="size-6" />
               <span className="truncate">{labels.profile}</span>
             </TabsTab>
           </TabsList>

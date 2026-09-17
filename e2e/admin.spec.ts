@@ -15,8 +15,8 @@ test.describe('CEO dashboard (UI ↔ Supabase)', () => {
     await expect(page.getByRole('heading', { name: /Hi,.*CEO/ })).toBeVisible({ timeout: 60_000 })
     await settle(page)
     // Stats tiles render
-    await expect(page.getByText('Trainers').first()).toBeVisible()
-    await expect(page.getByText('Trainees').first()).toBeVisible()
+    await expect(page.getByText('Supervisors').first()).toBeVisible()
+    await expect(page.getByText('Farmers').first()).toBeVisible()
   })
 
   test('A2. admin registers a new trainee — appears in UI and DB', async ({ page }) => {
@@ -33,7 +33,7 @@ test.describe('CEO dashboard (UI ↔ Supabase)', () => {
     await page.getByTestId('admin-create-form').waitFor({ state: 'visible' })
 
     await page.getByTestId('admin-role').click()
-    await page.getByRole('option', { name: 'Trainee', exact: true }).click()
+    await page.getByRole('option', { name: 'Farmer', exact: true }).click()
     await page.getByTestId('admin-displayName').fill(name)
     await page.getByTestId('admin-phone').fill(phone)
     await page.getByTestId('admin-password').fill('Trainee123!')
@@ -73,7 +73,7 @@ test.describe('CEO dashboard (UI ↔ Supabase)', () => {
     await page.getByTestId('admin-create-form').waitFor({ state: 'visible' })
 
     await page.getByTestId('admin-role').click()
-    await page.getByRole('option', { name: 'Trainer', exact: true }).click()
+    await page.getByRole('option', { name: 'Supervisor', exact: true }).click()
     await page.getByTestId('admin-displayName').fill(name)
     await page.getByTestId('admin-phone').fill(phone)
     await page.getByTestId('admin-password').fill('Trainer123!')

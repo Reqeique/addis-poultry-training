@@ -16,7 +16,7 @@ export async function settle(page: Page) {
  * test does not race the auth redirect.
  */
 export async function waitForTrainerDashboard(page: Page) {
-  await page.getByRole('heading', { name: /Hi,|Trainer Dashboard/ }).first().waitFor({ timeout: 30_000 })
+  await page.getByRole('heading', { name: /Hi,|Supervisor Dashboard/ }).first().waitFor({ timeout: 30_000 })
   await settle(page)
 }
 

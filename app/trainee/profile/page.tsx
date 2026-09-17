@@ -375,9 +375,9 @@ export default function TraineeProfilePage() {
 
             <Card className="min-w-0">
               <CardPanel className="p-4">
-                <h4 className="font-bold text-foreground text-sm mb-1">How do I contact my trainer directly?</h4>
+                <h4 className="font-bold text-foreground text-sm mb-1">How do I contact my supervisor directly?</h4>
                 <p className="text-xs text-muted-foreground leading-relaxed font-medium">
-                  Tap the Chats tab in the bottom navigation bar to open the direct message feed with your assigned trainer.
+                  Tap the Chats tab in the bottom navigation bar to open the direct message feed with your assigned supervisor.
                 </p>
               </CardPanel>
             </Card>

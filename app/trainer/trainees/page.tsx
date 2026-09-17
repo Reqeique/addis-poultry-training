@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { TrainerBottomNav } from '@/components/TrainerBottomNav';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore, UserProfile } from '@/lib/store';
-import { Phone, Sprout, Users } from 'lucide-react';
+import { Phone, Sprout, Users, Eye, EyeOff } from 'lucide-react';
 import { resolveApiUrl } from '@/lib/api-helper';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardPanel } from '@/components/ui/card';
@@ -27,6 +27,7 @@ export default function TraineesPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [trainees, setTrainees] = useState<UserProfile[]>([]);
+  const [showPassword, setShowPassword] = useState(true);
   const [form, setForm] = useState({
     displayName: '',
     phoneNumber: '',
@@ -193,15 +194,29 @@ export default function TraineesPage() {
               </Field>
               <Field>
                 <FieldLabel htmlFor="trainee-password">Temporary password</FieldLabel>
-                <Input
-                  id="trainee-password"
-                  placeholder="Temporary password"
-                  type="password"
-                  minLength={6}
-                  value={form.password}
-                  onChange={(e) => setForm((c) => ({ ...c, password: e.target.value }))}
-                  required
-                />
+                <span className="relative block">
+                  <Input
+                    id="trainee-password"
+                    placeholder="Temporary password"
+                    type={showPassword ? 'text' : 'password'}
+                    minLength={6}
+                    value={form.password}
+                    onChange={(e) => setForm((c) => ({ ...c, password: e.target.value }))}
+                    required
+                    className="pr-11"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => setShowPassword((s) => !s)}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    aria-pressed={showPassword}
+                    className="absolute right-1 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                  </Button>
+                </span>
               </Field>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <Field>
@@ -250,7 +265,7 @@ export default function TraineesPage() {
           </div>
 
           {loading ? (
-            <div className="flex flex-col gap-2" role="status" aria-label="Loading trainees">
+            <div className="flex flex-col gap-2" role="status" aria-label="Loading farmers">
               {[0, 1].map((i) => (
                 <Card key={i}>
                   <CardPanel className="flex items-center gap-3 p-4">

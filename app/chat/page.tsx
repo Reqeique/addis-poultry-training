@@ -464,7 +464,7 @@ function ChatContent() {
               <div className="flex min-w-0 flex-col">
                 <h1 className="truncate font-heading text-[15px] font-bold leading-tight">{peer.displayName}</h1>
                 <Badge variant="secondary" size="sm" className="mt-0.5 self-start uppercase">
-                  {peer.focusArea || (peer.role === 'trainer' ? 'Trainer' : 'Trainee')}
+                  {peer.focusArea || (peer.role === 'trainer' ? 'Supervisor' : peer.role === 'admin' ? 'CEO' : 'Farmer')}
                 </Badge>
               </div>
             </div>

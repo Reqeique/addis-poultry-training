@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({subsets:['latin'],variable:'--font-mono'});
 
 export const metadata: Metadata = {
   title: 'My Chicken Addis',
-  description: 'A streamlined communication platform for poultry farmers and trainers.',
+  description: 'A streamlined communication platform for poultry farmers and supervisors.',
   manifest: '/manifest.webmanifest',
   icons: {
     icon: '/icon.svg',

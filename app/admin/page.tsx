@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/lib/store';
 import { useRouter } from 'next/navigation';
-import { Users, UserPlus, LogOut, Building2, ChevronRight, Search, Pencil, Trash2, RefreshCw } from 'lucide-react';
+import { Users, UserPlus, LogOut, Building2, ChevronRight, Search, Pencil, Trash2, RefreshCw, Eye, EyeOff } from 'lucide-react';
 import { AdminBottomNav } from '@/components/AdminBottomNav';
 import { StatTile } from '@/components/stat-tile';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -63,6 +63,7 @@ export default function AdminDashboard() {
   const [displayName, setDisplayName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(true);
   const [role, setRole] = useState<'trainer' | 'trainee'>('trainee');
   const [focusArea, setFocusArea] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
@@ -306,8 +307,8 @@ export default function AdminDashboard() {
       <main className="mx-auto w-full max-w-2xl lg:max-w-4xl flex-1 min-w-0 px-4 sm:px-6" aria-busy={loading}>
         {/* Stats */}
         <div className="grid min-w-0 grid-cols-3 gap-2 sm:gap-4 py-2 mb-6" role="status" aria-label={loading ? 'Loading stats' : 'Stats'}>
-          <StatTile label="Trainers" value={loading ? undefined : trainers.length} icon={<UserPlus className="w-4 h-4" />} />
-          <StatTile label="Trainees" value={loading ? undefined : trainees.length} icon={<Users className="w-4 h-4" />} />
+          <StatTile label="Supervisors" value={loading ? undefined : trainers.length} icon={<UserPlus className="w-4 h-4" />} />
+          <StatTile label="Farmers" value={loading ? undefined : trainees.length} icon={<Users className="w-4 h-4" />} />
           <StatTile label="CEOs" value={loading ? undefined : admins.length} icon={<Building2 className="w-4 h-4" />} />
         </div>
         {actionError && (
@@ -339,11 +340,11 @@ export default function AdminDashboard() {
                 <FieldLabel htmlFor="admin-role">Role</FieldLabel>
                 <Select value={role} onValueChange={(v) => setRole(v as 'trainer' | 'trainee')}>
                   <SelectTrigger data-testid="admin-role" aria-label="Role">
-                    <SelectValue />
+                    <SelectValue>{(v: string) => (v === 'trainer' ? 'Supervisor' : 'Farmer')}</SelectValue>
                   </SelectTrigger>
                   <SelectPopup>
-                    <SelectItem value="trainee">Trainee</SelectItem>
-                    <SelectItem value="trainer">Trainer</SelectItem>
+                    <SelectItem value="trainee">Farmer</SelectItem>
+                    <SelectItem value="trainer">Supervisor</SelectItem>
                   </SelectPopup>
                 </Select>
               </Field>
@@ -374,16 +375,30 @@ export default function AdminDashboard() {
 
               <Field>
                 <FieldLabel htmlFor="admin-password">Password</FieldLabel>
-                <Input
-                  id="admin-password"
-                  required
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  minLength={6}
-                  placeholder="At least 6 characters"
-                  data-testid="admin-password"
-                />
+                <span className="relative block">
+                  <Input
+                    id="admin-password"
+                    required
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    minLength={6}
+                    placeholder="At least 6 characters"
+                    data-testid="admin-password"
+                    className="pr-11"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => setShowPassword((s) => !s)}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    aria-pressed={showPassword}
+                    className="absolute right-1 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                  </Button>
+                </span>
               </Field>
 
               {role === 'trainee' && (
@@ -421,7 +436,7 @@ export default function AdminDashboard() {
         </section>
 
         <UserList
-          title={loading ? 'Trainers' : `Trainers (${trainers.length})`}
+          title={loading ? 'Supervisors' : `Supervisors (${trainers.length})`}
           users={loading ? [] : trainers}
           testPrefix="admin-trainer"
           loading={loading}
@@ -431,7 +446,7 @@ export default function AdminDashboard() {
           onDelete={setDeleting}
         />
         <UserList
-          title={loading ? 'Trainees' : `Trainees (${trainees.length})`}
+          title={loading ? 'Farmers' : `Farmers (${trainees.length})`}
           users={loading ? [] : trainees}
           testPrefix="admin-trainee"
           loading={loading}
@@ -495,11 +510,13 @@ export default function AdminDashboard() {
                     disabled={editing.id === selfId}
                   >
                     <SelectTrigger id="admin-edit-role" data-testid="admin-edit-role" aria-label="Role">
-                      <SelectValue />
+                      <SelectValue>
+                        {(v: string) => (v === 'admin' ? 'CEO' : v === 'trainer' ? 'Supervisor' : 'Farmer')}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectPopup>
-                      <SelectItem value="trainee">Trainee</SelectItem>
-                      <SelectItem value="trainer">Trainer</SelectItem>
+                      <SelectItem value="trainee">Farmer</SelectItem>
+                      <SelectItem value="trainer">Supervisor</SelectItem>
                       <SelectItem value="admin">CEO</SelectItem>
                     </SelectPopup>
                   </Select>
