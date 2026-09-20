@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css'; // Global styles (coss ui design tokens)
 import { AuthProvider } from '@/components/auth-provider';
 import { ToastProvider } from '@/components/ui/toast';
+import { AppIntro } from '@/components/app-intro';
 
 import { Geist_Mono, Inter } from 'next/font/google';
 import { cn } from "@/lib/utils";
@@ -42,6 +43,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Isolation wrapper per coss ui / Base UI: portaled overlays
             (dialogs, sheets, popovers) always paint above page content. */}
         <div className="isolate relative flex min-h-svh flex-col">
+          <AppIntro />
           <ToastProvider position="top-center">
             <AuthProvider>{children}</AuthProvider>
           </ToastProvider>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/store';
 import { Lock, Phone, Eye, EyeOff } from 'lucide-react';
@@ -22,22 +22,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const { loading: authLoading } = useAuthStore();
   const supabase = createClient();
-
-  // Logo intro: sits big in the middle of the front page, then flies up
-  // into its header spot. Skipped entirely for reduced-motion users.
-  const [introStage, setIntroStage] = useState<'center' | 'fly' | 'done'>('center');
-  useEffect(() => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setIntroStage('done');
-      return;
-    }
-    const dwell = setTimeout(() => setIntroStage('fly'), 900);
-    const finish = setTimeout(() => setIntroStage('done'), 1700);
-    return () => {
-      clearTimeout(dwell);
-      clearTimeout(finish);
-    };
-  }, []);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,24 +55,9 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-svh w-full flex-col bg-background font-sans text-foreground">
-      {introStage !== 'done' && (
-        <div
-          aria-hidden="true"
-          className={`fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-background pointer-events-none transition-opacity duration-500 ${introStage === 'fly' ? 'opacity-0' : 'opacity-100'}`}
-        >
-          <div
-            className={`transition-all duration-700 ease-in-out ${introStage === 'fly' ? '-translate-y-[30vh] scale-[0.55] opacity-0' : 'translate-y-0 scale-100 opacity-100'}`}
-          >
-            <Logo className="size-28" />
-          </div>
-          <p className={`text-sm font-semibold text-muted-foreground transition-opacity duration-500 ${introStage === 'fly' ? 'opacity-0' : 'opacity-100'}`}>
-            Grow Together
-          </p>
-        </div>
-      )}
       <main className="mx-auto flex w-full max-w-md flex-1 flex-col px-6 py-10">
         <div className="mx-auto mb-6 mt-8">
-          <Logo className={`size-20 transition-all duration-700 ease-out ${introStage === 'done' ? 'scale-100 opacity-100' : 'scale-50 opacity-0'}`} />
+          <Logo className="size-20" />
         </div>
 
         <div className="mb-6 text-center">
