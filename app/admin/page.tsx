@@ -227,8 +227,12 @@ export default function AdminDashboard() {
     }
   }
 
-  async function handleConfirmDelete() {
-    if (!deleting) return;
+  function openDelete(user: AdminUser) {
+    setActionError(null);
+    setDeleting(user);
+  }
+
+  async function handleConfirmDelete() {    if (!deleting) return;
     setDeletingBusy(true);
     setActionError(null);
     try {
@@ -443,7 +447,7 @@ export default function AdminDashboard() {
           selfId={selfId}
           onEdit={openEdit}
           onToggle={handleToggleActive}
-          onDelete={setDeleting}
+          onDelete={openDelete}
         />
         <UserList
           title={loading ? 'Farmers' : `Farmers (${trainees.length})`}
@@ -453,7 +457,7 @@ export default function AdminDashboard() {
           selfId={selfId}
           onEdit={openEdit}
           onToggle={handleToggleActive}
-          onDelete={setDeleting}
+          onDelete={openDelete}
         />
         {!loading && admins.length > 0 && (
           <UserList
@@ -463,7 +467,7 @@ export default function AdminDashboard() {
             selfId={selfId}
             onEdit={openEdit}
             onToggle={handleToggleActive}
-            onDelete={setDeleting}
+            onDelete={openDelete}
           />
         )}
       </main>
@@ -582,6 +586,11 @@ export default function AdminDashboard() {
               This permanently removes their profile and login. Users with chat or inquiry history cannot be deleted — deactivate them instead.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {actionError && (
+            <Alert variant="error">
+              <AlertDescription data-testid="admin-delete-error">{actionError}</AlertDescription>
+            </Alert>
+          )}
           <AlertDialogFooter>
             <Button variant="outline" onClick={() => setDeleting(null)} disabled={deletingBusy}>
               Cancel
