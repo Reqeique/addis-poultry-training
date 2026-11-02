@@ -226,6 +226,10 @@ export async function POST(request: Request) {
   }
 
   const authUserId = createdUser.user.id;
+  const twelveMonthsFromNow = new Date();
+  twelveMonthsFromNow.setFullYear(twelveMonthsFromNow.getFullYear() + 1);
+  const subscriptionExpiresAt = twelveMonthsFromNow.toISOString();
+  const lastPaymentAt = new Date().toISOString();
 
   try {
     if (existing) {
@@ -241,6 +245,8 @@ export async function POST(request: Request) {
           farm_size: farmSize || null,
           flock_count: Number.isFinite(flockCount) ? flockCount : null,
           is_active: true,
+          subscription_expires_at: subscriptionExpiresAt,
+          last_payment_at: lastPaymentAt,
         })
         .eq('id', existing.id);
       if (updateError) throw updateError;
@@ -256,6 +262,8 @@ export async function POST(request: Request) {
         farm_size: farmSize || null,
         flock_count: Number.isFinite(flockCount) ? flockCount : null,
         is_active: true,
+        subscription_expires_at: subscriptionExpiresAt,
+        last_payment_at: lastPaymentAt,
       });
       if (insertError) throw insertError;
     }

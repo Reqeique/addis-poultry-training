@@ -77,9 +77,11 @@ function showPaymentFeedback(): void {
   }, 6000);
 }
 
-async function copyMerchantNumber(): Promise<boolean> {
+export const TELEBIRR_MERCHANT_PHONE = process.env.NEXT_PUBLIC_MERCHANT_PHONE || '+251 91 122 3344';
+
+export async function copyMerchantNumber(): Promise<boolean> {
   try {
-    const merchantNumber = process.env.NEXT_PUBLIC_MERCHANT_PHONE || '0912345678';
+    const merchantNumber = TELEBIRR_MERCHANT_PHONE;
     await Clipboard.write({ string: merchantNumber });
     return true;
   } catch (err) {

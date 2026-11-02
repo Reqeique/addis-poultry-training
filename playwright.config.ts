@@ -17,6 +17,7 @@ function loadEnvLocal(): Record<string, string> {
   return out
 }
 const envLocal = loadEnvLocal()
+Object.assign(process.env, envLocal)
 
 export default defineConfig({
   testDir: './e2e',
@@ -25,10 +26,6 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: 1,
   reporter: 'line',
-  env: {
-    NEXT_PUBLIC_SUPABASE_URL: envLocal.NEXT_PUBLIC_SUPABASE_URL || '',
-    SUPABASE_SERVICE_ROLE_KEY: envLocal.SUPABASE_SERVICE_ROLE_KEY || '',
-  },
   use: {
     baseURL: BASE_URL,
     trace: 'on-first-retry',

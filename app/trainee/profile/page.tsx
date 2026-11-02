@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
-import { LogOut, User, BellRing, Settings2, HelpCircle, Sparkles, CheckCircle2, X, MapPin, Scale, ChevronRight, Phone } from 'lucide-react';
+import { LogOut, User, BellRing, Settings2, HelpCircle, Sparkles, CheckCircle2, X, MapPin, Scale, ChevronRight, Phone, Copy, Check } from 'lucide-react';
 import { useAuthStore, useAppStore } from '@/lib/store';
 import { TraineeBottomNav } from '@/components/TraineeBottomNav';
-import { launchTelebirr } from '@/hooks/useTelebirr';
+import { launchTelebirr, TELEBIRR_MERCHANT_PHONE, copyMerchantNumber } from '@/hooks/useTelebirr';
 import { Button } from '@/components/ui/button';
 import { Card, CardPanel } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -31,6 +31,13 @@ export default function TraineeProfilePage() {
 
   // Active modal control
   const [activeModal, setActiveModal] = useState<'info' | 'notifications' | 'help' | null>(null);
+  const [copiedNumber, setCopiedNumber] = useState(false);
+
+  const handleCopyMerchantNumber = async () => {
+    await copyMerchantNumber();
+    setCopiedNumber(true);
+    setTimeout(() => setCopiedNumber(false), 2500);
+  };
 
   // Form states for Personal Info
   const [displayName, setDisplayName] = useState('');
@@ -166,9 +173,9 @@ export default function TraineeProfilePage() {
 
             <div className="flex items-end justify-between gap-2 border-t border-border pt-5">
               <div className="min-w-0">
-                <span className="text-[10px] text-muted-foreground font-bold block tracking-wider uppercase">{isAmharic ? 'ዋጋ' : 'INVESTMENT'}</span>
-                <span className="text-2xl font-black tracking-tight whitespace-nowrap">1,000 ETB</span>
-                <span className="text-xs text-muted-foreground font-bold"> / {isAmharic ? 'በወር' : 'mo'}</span>
+                <span className="text-[10px] text-muted-foreground font-bold block tracking-wider uppercase">{isAmharic ? 'ዋጋ (ዓመታዊ)' : 'ANNUAL INVESTMENT'}</span>
+                <span className="text-2xl font-black tracking-tight whitespace-nowrap">10,000 ETB</span>
+                <span className="text-xs text-muted-foreground font-bold"> / {isAmharic ? 'በዓመት (አንድ ጊዜ)' : 'year (one-time)'}</span>
               </div>
 
               <Button
@@ -179,6 +186,48 @@ export default function TraineeProfilePage() {
               >
                 <span>{isAmharic ? 'በቴሌብር ይክፈሉ' : 'Pay with Telebirr'}</span>
               </Button>
+            </div>
+
+            <div className="mt-4 flex flex-col gap-2 rounded-xl border border-primary/25 bg-primary/5 p-3.5">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary">
+                    <Phone className="size-4" />
+                  </span>
+                  <div className="min-w-0">
+                    <span className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                      {isAmharic ? 'የቴሌብር መክፈያ ቁጥር' : 'Telebirr Payment Number'}
+                    </span>
+                    <span className="block font-mono text-sm font-extrabold tracking-wide text-foreground">
+                      {TELEBIRR_MERCHANT_PHONE}
+                    </span>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCopyMerchantNumber}
+                  className="h-8 shrink-0 gap-1.5 px-2.5 text-xs"
+                >
+                  {copiedNumber ? (
+                    <>
+                      <Check className="size-3.5 text-primary" />
+                      <span className="text-primary font-bold">{isAmharic ? 'ተገልብጧል' : 'Copied'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="size-3.5" />
+                      <span>{isAmharic ? 'ቁጥሩን ገልብጥ' : 'Copy'}</span>
+                    </>
+                  )}
+                </Button>
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                {isAmharic
+                  ? 'ክፍያውን በቴሌብር መተግበሪያ ወይም በ *127# ወደዚህ ቁጥር ይላኩ (10,000 ብር/ዓመት)።'
+                  : 'Pay ETB 10,000 via Telebirr or *127# to this number for 12 months full access.'}
+              </p>
             </div>
           </CardPanel>
         </Card>

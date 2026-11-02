@@ -4,7 +4,7 @@ import { getCurrentServerProfile } from '@/lib/server-profile';
 
 export const dynamic = 'force-dynamic';
 
-const SUBSCRIPTION_PRICE_ETB = 1000;
+const SUBSCRIPTION_PRICE_ETB = 10000;
 const MESSAGE_LIMIT = 3000;
 const UNREPLIED_AFTER_HOURS = 1;
 

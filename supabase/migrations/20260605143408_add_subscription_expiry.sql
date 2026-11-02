@@ -47,7 +47,7 @@ begin
   set
     is_active              = true,
     last_payment_at        = now(),
-    subscription_expires_at = now() + interval '30 days',
+    subscription_expires_at = now() + interval '12 months',
     updated_at             = now()
   where id = trainee_profile_id;
 end;

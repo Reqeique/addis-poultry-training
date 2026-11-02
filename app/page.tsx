@@ -15,13 +15,29 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Spinner } from '@/components/ui/spinner';
 
 export default function LoginPage() {
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('+251');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { loading: authLoading } = useAuthStore();
   const supabase = createClient();
+
+  const handlePhoneChange = (val: string) => {
+    if (!val || val === '+' || val === '+2' || val === '+25') {
+      setPhoneNumber('+251');
+      return;
+    }
+    if (val.startsWith('0') && val.length > 1) {
+      setPhoneNumber('+251' + val.slice(1));
+      return;
+    }
+    if (!val.startsWith('+')) {
+      setPhoneNumber('+251' + val);
+      return;
+    }
+    setPhoneNumber(val);
+  };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,13 +105,13 @@ export default function LoginPage() {
                   <Phone className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     id="phone"
-                    className="pl-9"
-                    placeholder="Phone number (e.g. +251...)"
+                    className="pl-9 font-mono"
+                    placeholder="+251 9... or +251 7..."
                     aria-label="Phone number (e.g. +251...)"
                     type="tel"
                     autoComplete="tel"
                     value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    onChange={(e) => handlePhoneChange(e.target.value)}
                     required
                   />
                 </span>
@@ -128,7 +144,13 @@ export default function LoginPage() {
                   </Button>
                 </span>
               </Field>
-              <Button type="submit" size="lg" loading={loading} disabled={!phoneNumber || !password} className="mt-1 w-full">
+              <Button
+                type="submit"
+                size="lg"
+                loading={loading}
+                disabled={!phoneNumber || phoneNumber.trim() === '+251' || !password}
+                className="mt-1 w-full"
+              >
                 Sign In
               </Button>
             </form>

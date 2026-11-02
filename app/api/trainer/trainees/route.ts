@@ -75,6 +75,10 @@ export async function POST(request: Request) {
   }
 
   const authUserId = createdUser.user.id;
+  const twelveMonthsFromNow = new Date();
+  twelveMonthsFromNow.setFullYear(twelveMonthsFromNow.getFullYear() + 1);
+  const subscriptionExpiresAt = twelveMonthsFromNow.toISOString();
+  const lastPaymentAt = new Date().toISOString();
 
   if (existingProfile) {
     const { error: updateError } = await admin
@@ -88,6 +92,8 @@ export async function POST(request: Request) {
         farm_size: farmSize || null,
         flock_count: Number.isFinite(flockCount) ? flockCount : null,
         is_active: true,
+        subscription_expires_at: subscriptionExpiresAt,
+        last_payment_at: lastPaymentAt,
       })
       .eq('id', existingProfile.id);
 
@@ -107,6 +113,8 @@ export async function POST(request: Request) {
       farm_size: farmSize || null,
       flock_count: Number.isFinite(flockCount) ? flockCount : null,
       is_active: true,
+      subscription_expires_at: subscriptionExpiresAt,
+      last_payment_at: lastPaymentAt,
     });
 
     if (insertError) {

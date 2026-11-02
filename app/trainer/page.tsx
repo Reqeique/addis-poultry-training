@@ -198,8 +198,11 @@ export default function TrainerDashboard() {
   };
 
   const activateSubscription = async (trainee: UserProfile) => {
-    // Optimistic flip so the switch responds instantly; realtime refetch reconciles.
-    setTrainees((prev) => prev.map((t) => (t.uid === trainee.uid ? { ...t, isActive: true } : t)));
+    const oneYearFromNow = new Date();
+    oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
+    const newExpiry = oneYearFromNow.toISOString();
+    // Optimistic flip with 12-month expiry so badge and date update instantly
+    setTrainees((prev) => prev.map((t) => (t.uid === trainee.uid ? { ...t, isActive: true, subscriptionExpiresAt: newExpiry } : t)));
     const { error } = await supabase.rpc('activate_trainee_subscription', {
       trainee_profile_id: trainee.uid,
     });
@@ -303,6 +306,11 @@ export default function TrainerDashboard() {
             icon={<MessageSquare className="size-4" />}
             label="Chats"
             value={loading ? <Skeleton className="h-8 w-12" /> : chatsCount}
+          />
+          <StatCard
+            icon={<Calendar className="size-4" />}
+            label="Usage"
+            value="12 Mos"
           />
         </div>
 

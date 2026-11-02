@@ -8,11 +8,11 @@ import Image from 'next/image';
 import { TraineeBottomNav } from '@/components/TraineeBottomNav';
 import { processVideoForUpload } from '@/lib/media/video';
 import { pickSupportedAudioMime, requestMicrophone, micErrorMessage } from '@/lib/media/audio-recorder';
-import { LogOut, Send, CheckCircle2, Globe, Camera, Image as ImageIcon, Mic, Square, Trash2, Video, AlertTriangle, Clock } from 'lucide-react';
+import { LogOut, Send, CheckCircle2, Globe, Camera, Image as ImageIcon, Mic, Square, Trash2, Video, AlertTriangle, Clock, PlayCircle } from 'lucide-react';
 import { resolveApiUrl } from '@/lib/api-helper';
 import { differenceInDays, format } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { Card, CardPanel } from '@/components/ui/card';
+import { Card, CardPanel, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -149,6 +149,7 @@ export default function TraineeDashboard() {
   const { isAmharic, setIsAmharic } = useAppStore();
   const router = useRouter();
   const supabaseRef = useRef(createClient());
+  const cachedChatIdRef = useRef<string | null>(null);
   const supabase = supabaseRef.current;
   const [loading, setLoading] = useState(true);
   const lang = isAmharic ? 'am' : 'en';
@@ -583,77 +584,79 @@ export default function TraineeDashboard() {
         throw new Error('No supervisor is assigned to this farmer.');
       }
 
-      const { data: inquiry, error } = await supabase
+      // Fast parallel resolution: resolve chat and insert inquiry concurrently
+      const chatIdPromise = cachedChatIdRef.current
+        ? Promise.resolve(cachedChatIdRef.current)
+        : findOrCreateChat(supabase, profile.uid, profile.assignedTrainerId).then((id) => {
+            cachedChatIdRef.current = id;
+            return id;
+          });
+
+      const inquiryPromise = supabase
         .from('inquiries')
         .insert({
-        trainee_id: profile.uid,
-        trainer_id: profile.assignedTrainerId,
-        trainee_name: profile.displayName,
-        message: message.trim() || '(media message)',
-        urgency,
-        status: 'pending',
-        image: image || null,
-        audio_url: (audioBase64 as string) || null,
-        video_storage_provider: uploadedVideo?.objectKey ? 'r2' : null,
-        video_asset_type: uploadedVideo?.objectKey ? 'file' : null,
-        video_status: uploadedVideo?.objectKey ? 'ready' : null,
-        video_url: uploadedVideo?.canonicalUrl ?? null,
-        video_object_key: uploadedVideo?.objectKey ?? null,
-        video_mime_type: uploadedVideo?.contentType ?? null,
-        video_size_bytes: uploadedVideo?.fileSize ?? null,
-        video_duration_seconds: uploadedVideo?.durationSeconds ?? null,
-        video_width: uploadedVideo?.width ?? null,
-        video_height: uploadedVideo?.height ?? null,
-        video_expires_at: uploadedVideo?.expiresAt ?? null,
+          trainee_id: profile.uid,
+          trainer_id: profile.assignedTrainerId,
+          trainee_name: profile.displayName,
+          message: message.trim() || '(media message)',
+          urgency,
+          status: 'pending',
+          image: image || null,
+          audio_url: (audioBase64 as string) || null,
+          video_storage_provider: uploadedVideo?.objectKey ? 'r2' : null,
+          video_asset_type: uploadedVideo?.objectKey ? 'file' : null,
+          video_status: uploadedVideo?.objectKey ? 'ready' : null,
+          video_url: uploadedVideo?.canonicalUrl ?? null,
+          video_object_key: uploadedVideo?.objectKey ?? null,
+          video_mime_type: uploadedVideo?.contentType ?? null,
+          video_size_bytes: uploadedVideo?.fileSize ?? null,
+          video_duration_seconds: uploadedVideo?.durationSeconds ?? null,
+          video_width: uploadedVideo?.width ?? null,
+          video_height: uploadedVideo?.height ?? null,
+          video_expires_at: uploadedVideo?.expiresAt ?? null,
         })
-        .select(
-          'id, message, urgency, image, audio_url, video_object_key, video_status, video_expires_at'
-        )
+        .select('id, message, urgency, image, audio_url, video_object_key, video_status, video_expires_at')
         .single();
 
-      if (error || !inquiry) {
+      const [chatId, inquiryRes] = await Promise.all([chatIdPromise, inquiryPromise]);
+      const inquiry = inquiryRes.data;
+
+      if (inquiryRes.error || !inquiry) {
         if (uploadedVideo?.objectKey) {
           await fetch(resolveApiUrl('/api/inquiry-media/delete'), {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              objectKey: uploadedVideo.objectKey,
-            }),
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ objectKey: uploadedVideo.objectKey }),
           }).catch(() => null);
         }
-
-        throw new Error(error?.message || 'Could not submit inquiry.');
+        throw new Error(inquiryRes.error?.message || 'Could not submit inquiry.');
       }
 
-      const chatId = await findOrCreateChat(supabase, profile.uid, profile.assignedTrainerId);
       const chatText = inquiry.urgency === 'High' ? `[High] ${inquiry.message}` : inquiry.message;
 
-      const { error: messageError } = await supabase.from('messages').insert({
-        chat_id: chatId,
-        sender_id: profile.uid,
-        text: chatText,
-        image_url: inquiry.image,
-        audio_url: inquiry.audio_url,
-        inquiry_id: inquiry.id,
-        inquiry_urgency: inquiry.urgency,
-        video_object_key: inquiry.video_object_key,
-        video_status: inquiry.video_status,
-        video_expires_at: inquiry.video_expires_at,
-      });
-
-      if (messageError) {
-        throw new Error(messageError.message || 'Could not send inquiry to supervisor chat.');
-      }
-
-      await supabase
-        .from('chats')
-        .update({
+      // Parallelize message creation and chat update
+      const [msgRes] = await Promise.all([
+        supabase.from('messages').insert({
+          chat_id: chatId,
+          sender_id: profile.uid,
+          text: chatText,
+          image_url: inquiry.image,
+          audio_url: inquiry.audio_url,
+          inquiry_id: inquiry.id,
+          inquiry_urgency: inquiry.urgency,
+          video_object_key: inquiry.video_object_key,
+          video_status: inquiry.video_status,
+          video_expires_at: inquiry.video_expires_at,
+        }),
+        supabase.from('chats').update({
           last_message: uploadedVideo?.objectKey ? 'Sent an inquiry video' : chatText,
           last_message_time: new Date().toISOString(),
-        })
-        .eq('id', chatId);
+        }).eq('id', chatId),
+      ]);
+
+      if (msgRes.error) {
+        throw new Error(msgRes.error.message || 'Could not send inquiry to supervisor chat.');
+      }
       
       setSubmitted(true);
       setTimeout(() => {
@@ -751,6 +754,54 @@ export default function TraineeDashboard() {
           <h1 className="font-heading text-3xl font-bold tracking-tight">{t.howCanWeHelp}</h1>
           <p className="mt-1 font-medium text-muted-foreground">{t.subtitle}</p>
         </div>
+
+        {/* Farmer Educational Training Video */}
+        <Card className="mb-6 overflow-hidden border-primary/20 bg-card shadow-sm" data-testid="farmer-training-video">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <span className="flex size-7 items-center justify-center rounded-lg bg-primary/15 text-primary">
+                  <PlayCircle className="size-4" />
+                </span>
+                <span className="text-xs font-bold uppercase tracking-wider text-primary">
+                  {lang === 'am' ? 'የስልጠና ቪዲዮ' : 'TRAINING VIDEO'}
+                </span>
+              </span>
+              <Badge variant="secondary" size="sm">
+                {lang === 'am' ? 'አስፈላጊ መመሪያ' : 'Official Guide'}
+              </Badge>
+            </div>
+            <CardTitle className="mt-2 text-base font-bold">
+              {lang === 'am' ? 'የዶሮ ጤና፣ አመጋገብና ባዮሴኪዩሪቲ አጠባበቅ' : 'Flock Health, Feeding & Biosecurity Care'}
+            </CardTitle>
+            <CardDescription className="text-xs">
+              {lang === 'am'
+                ? 'የዶሮ በሽታዎችን ለመከላከል እና ምርታማነትን ለመጨመር ተግባራዊ የስልጠና ቪዲዮ ይመልከቱ።'
+                : 'Watch this orientation video on best practices for poultry management and disease prevention.'}
+            </CardDescription>
+          </CardHeader>
+          <CardPanel className="p-0">
+            <div className="relative aspect-video w-full overflow-hidden bg-black/95">
+              <video
+                controls
+                playsInline
+                preload="metadata"
+                className="h-full w-full object-cover"
+                poster="https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?auto=format&fit=crop&w=800&q=80"
+              >
+                <source
+                  src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+                  type="video/mp4"
+                />
+                Your browser does not support the video tag.
+              </video>
+            </div>
+            <div className="p-3 bg-muted/40 text-[11px] text-muted-foreground flex items-center justify-between">
+              <span>{lang === 'am' ? 'የአዲስ ዶሮ እርባታ ባለሙያዎች የተዘጋጀ' : 'Created by Addis Poultry Specialists'}</span>
+              <span className="font-semibold text-primary">{lang === 'am' ? '12 ወር ሙሉ ድጋፍ' : '12-Month Support'}</span>
+            </div>
+          </CardPanel>
+        </Card>
 
         {submitted ? (
           <Card>

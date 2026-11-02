@@ -61,7 +61,7 @@ export default function AdminDashboard() {
 
   // Form state
   const [displayName, setDisplayName] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('+251');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(true);
   const [role, setRole] = useState<'trainer' | 'trainee'>('trainee');
@@ -150,7 +150,7 @@ export default function AdminDashboard() {
       }
       // Reset
       setDisplayName('');
-      setPhoneNumber('');
+      setPhoneNumber('+251');
       setPassword('');
       setFocusArea('');
       setShowForm(false);
@@ -372,7 +372,7 @@ export default function AdminDashboard() {
                   required
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
-                  placeholder="+2519XXXXXXXX"
+                  placeholder="+251 9... or +251 7..."
                   data-testid="admin-phone"
                 />
               </Field>
